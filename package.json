@@ -1,11 +1,27 @@
 {
-  "name": "skymap",
-  "module": "index.ts",
-  "type": "module",
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  }
+	"name": "skymap",
+	"module": "index.ts",
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"dev": "bun typecheck && vite",
+		"build": "bun typecheck && bun build ./src --outdir ./dist",
+		"typecheck": "tsc --noEmit",
+		"format": "biome check --write .",
+		"lint": "biome check ."
+	},
+	"author": "skewb1k",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/skewb1k/skymap.git"
+	},
+	"bugs": {
+		"url": "https://github.com/skewb1k/skymap/issues"
+	},
+	"homepage": "https://github.com/skewb1k/skymap#readme",
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"typescript": "^5.7.3",
+		"vite": "^6.0.11"
+	}
 }
