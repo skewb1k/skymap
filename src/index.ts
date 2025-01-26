@@ -12,6 +12,7 @@ type SkyMapOptions = {
 	starColor?: string;
 	bgColor?: string;
 	borderColor?: string;
+	borderWidth?: number;
 };
 
 export class SkyMap {
@@ -32,6 +33,7 @@ export class SkyMap {
 	private starColor: string;
 	private bgColor: string;
 	private borderColor: string;
+	private borderWidth: number;
 
 	constructor(container: HTMLDivElement, options: SkyMapOptions = {}) {
 		const {
@@ -43,6 +45,7 @@ export class SkyMap {
 			starColor = "#ffffff",
 			bgColor = "#000000",
 			borderColor = "#f00",
+			borderWidth = 4,
 		} = options;
 
 		this.container = container;
@@ -64,6 +67,7 @@ export class SkyMap {
 		this.starColor = starColor;
 		this.bgColor = bgColor;
 		this.borderColor = borderColor;
+		this.borderWidth = borderWidth;
 
 		this.latitude = Angle.fromDegrees(latitude);
 		this.longitude = Angle.fromDegrees(longitude);
@@ -206,7 +210,7 @@ export class SkyMap {
 			{ x: this.radius, y: this.radius },
 			this.radius,
 			this.borderColor,
-			4,
+			this.borderWidth,
 		);
 		this.ctx.stroke();
 	}
