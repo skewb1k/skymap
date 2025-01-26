@@ -35,6 +35,7 @@ export class SkyMap {
 	private fov: number;
 
 	private scaleMod: number;
+	private lst: Angle;
 
 	private gridColor: string;
 	private gridWidth: number;
@@ -92,6 +93,18 @@ export class SkyMap {
 		this.azimuth = Angle.fromDegrees(0);
 
 		this.scaleMod = this.radius / 500;
+		this.lst = getLocalSiderealTime(this.datetime, this.longitude);
+
+		// Convert Zenith Position to Alt/Az
+		const zenithCoords = equatorialToHorizontal(
+			Angle.fromDegrees(0),
+			this.latitude,
+			this.latitude,
+		);
+
+		// Set the initial altitude and azimuth based on the zenith
+		this.altitude = zenithCoords.altitude;
+		this.azimuth = zenithCoords.azimuth;
 
 		this.stars = stars;
 
@@ -168,12 +181,10 @@ export class SkyMap {
 		const projX = (finalX / (1 + finalZ)) * scale + this.radius;
 		const projY = (finalY / (1 + finalZ)) * scale + this.radius;
 
-		return { coo: { x: projX, y: projY }, visible: finalZ > -0.99 };
+		return { coo: { x: projX, y: projY }, visible: finalZ > -1 };
 	}
 
 	private drawGrid() {
-		const lst = getLocalSiderealTime(this.datetime, this.longitude);
-
 		// Create clipping region to limit drawing to circle
 		this.ctx.save();
 		this.ctx.beginPath();
@@ -190,7 +201,7 @@ export class SkyMap {
 
 			for (let raDeg = 0; raDeg <= 360; raDeg += 5) {
 				const ra = Angle.fromDegrees(raDeg);
-				const ha = lst.subtract(ra);
+				const ha = this.lst.subtract(ra);
 				const coords = equatorialToHorizontal(ha, declination, this.latitude);
 				const point = this.project(coords.altitude, coords.azimuth);
 
@@ -212,12 +223,12 @@ export class SkyMap {
 			let firstPoint = true;
 
 			for (
-				let decDeg = -90;
+				let decDeg = raDeg % 90 === 0 ? -90 : -80;
 				decDeg <= (raDeg % 90 === 0 ? 90 : 80);
 				decDeg += 5
 			) {
 				const declination = Angle.fromDegrees(decDeg);
-				const ha = lst.subtract(ra);
+				const ha = this.lst.subtract(ra);
 				const coords = equatorialToHorizontal(ha, declination, this.latitude);
 				const point = this.project(coords.altitude, coords.azimuth);
 
@@ -265,8 +276,7 @@ export class SkyMap {
 	}
 
 	private drawStar(ra: Angle, dec: Angle, magnitude: number, bv: number): void {
-		const lst = getLocalSiderealTime(this.datetime, this.longitude);
-		const ha = lst.subtract(ra);
+		const ha = this.lst.subtract(ra);
 		const coords = equatorialToHorizontal(ha, dec, this.latitude);
 		const point = this.project(coords.altitude, coords.azimuth);
 

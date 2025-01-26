@@ -8,6 +8,22 @@ export function equatorialToHorizontal(
 	altitude: Angle;
 	azimuth: Angle;
 } {
+	if (Math.abs(latitude.degrees) >= 89.99) {
+		const altitude = Angle.fromDegrees(
+			90 -
+				(latitude.degrees > 0
+					? 90 - declination.degrees
+					: 90 + declination.degrees),
+		);
+
+		// At poles, azimuth is essentially the hour angle
+		// Adding/subtracting 180° depending on which pole
+		const azimuth = Angle.fromDegrees(
+			latitude.degrees > 0 ? hourAngle.degrees : hourAngle.degrees + 180,
+		);
+
+		return { altitude, azimuth };
+	}
 	const sinAltitude =
 		latitude.sin * declination.sin +
 		latitude.cos * declination.cos * hourAngle.cos;
