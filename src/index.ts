@@ -1,8 +1,8 @@
+import stars from "../data/stars.6.json";
 import { Angle } from "./Angle";
 import { getLocalSiderealTime } from "./date";
 import { equatorialToHorizontal } from "./helper/angle";
 import type { Coo } from "./types/Coo.type";
-import stars from "../data/stars.6.json";
 import type { Star } from "./types/Star.type";
 
 type SkyMapOptions = {
@@ -16,6 +16,7 @@ type SkyMapOptions = {
 	bgColor?: string;
 	borderColor?: string;
 	borderWidth?: number;
+	starColors?: boolean; //? rename
 };
 
 export class SkyMap {
@@ -43,6 +44,8 @@ export class SkyMap {
 
 	private stars: Star[];
 
+	private starColors: boolean;
+
 	constructor(container: HTMLDivElement, options: SkyMapOptions = {}) {
 		const {
 			latitude = 0,
@@ -55,6 +58,7 @@ export class SkyMap {
 			bgColor = "#000000",
 			borderColor = "#f00",
 			borderWidth = 4,
+			starColors = false,
 		} = options;
 
 		this.container = container;
@@ -96,17 +100,33 @@ export class SkyMap {
 		this.drawStars();
 	}
 
-	private drawCircle(coo: Coo, radius: number, color: string, width = 1): void {
-		this.ctx.lineWidth = width * this.scaleMod;
-		this.ctx.strokeStyle = color;
+	private arcCircle(coo: Coo, radius: number): void {
 		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
 	}
 
-	private drawBg(): void {
-		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); // Clear previous drawings
+	private drawCircle(
+		coo: Coo,
+		radius: number,
+		color: string,
+		width: number,
+	): void {
 		this.ctx.beginPath();
-		this.drawCircle(this.center, this.radius, this.bgColor);
+		this.ctx.lineWidth = width * this.scaleMod;
+		this.ctx.strokeStyle = color;
+		this.arcCircle(coo, radius);
+		this.ctx.stroke();
+	}
+
+	private drawDisk(coo: Coo, radius: number, color: string): void {
+		this.ctx.beginPath();
+		this.ctx.fillStyle = color;
+		this.arcCircle(coo, radius);
 		this.ctx.fill();
+	}
+
+	private drawBg(): void {
+		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.drawDisk(this.center, this.radius, this.bgColor);
 	}
 
 	private drawStars(): void {
@@ -115,6 +135,7 @@ export class SkyMap {
 				Angle.fromDegrees(star.lon),
 				Angle.fromDegrees(star.lat),
 				star.mag,
+				star.bv,
 			);
 		});
 	}
@@ -153,7 +174,7 @@ export class SkyMap {
 		// Create clipping region to limit drawing to circle
 		this.ctx.save();
 		this.ctx.beginPath();
-		this.drawCircle(this.center, this.radius, "white");
+		this.arcCircle(this.center, this.radius);
 		this.ctx.clip();
 
 		this.ctx.lineWidth = this.gridWidth * this.scaleMod;
@@ -232,17 +253,44 @@ export class SkyMap {
 		// this.ctx.restore();
 
 		// Draw the boundary circle
-		this.ctx.beginPath();
 		this.drawCircle(
 			{ x: this.radius, y: this.radius },
 			this.radius,
 			this.borderColor,
 			this.borderWidth,
 		);
-		this.ctx.stroke();
 	}
 
-	private drawStar(ra: Angle, dec: Angle, magnitude: number): void {
+	private bvToRGB(bv: number): string {
+		// B-V color index to RGB conversion
+		// Based on realistic stellar color transformation
+		const temp = 4600 * (1 / (0.92 * bv + 1.7) + 1 / (0.92 * bv + 0.62));
+
+		let r = 0;
+		let g = 0;
+		let b = 0;
+
+		if (temp <= 6000) {
+			// todo: adjust colors, maybe accound magnitude
+			r = 1;
+			g = 0.3 * Math.log(temp / 100 - 10);
+			b = 0.5;
+		} else {
+			r = 1.0;
+			g = 0.9;
+			b = 0.4 * Math.log(temp / 100 - 56);
+		}
+
+		// console.log(Math.round(r * 255));
+		// Ensure values are within 0-255 range
+		r = Math.max(0, Math.min(255, Math.round(r * 255)));
+		g = Math.max(0, Math.min(255, Math.round(g * 255)));
+		b = Math.max(0, Math.min(255, Math.round(b * 255)));
+
+		return `rgb(${r}, ${g}, ${b})`;
+	}
+
+	private drawStar(ra: Angle, dec: Angle, magnitude: number, bv: number): void {
 		const lst = getLocalSiderealTime(this.datetime, this.longitude);
 		const ha = lst.subtract(ra);
 		const coords = equatorialToHorizontal(ha, dec, this.latitude);
@@ -251,10 +299,9 @@ export class SkyMap {
 		if (point.visible) {
 			const size = (6 - magnitude) * 0.5 * this.scaleMod; // todo: custom max mag
 
-			this.ctx.beginPath();
-			this.ctx.fillStyle = this.starColor;
-			this.drawCircle(point.coo, size, this.starColor);
-			this.ctx.fill();
+			const color = this.starColors ? this.bvToRGB(bv) : this.starColor;
+
+			this.drawDisk(point.coo, size, color);
 		}
 	}
 }
