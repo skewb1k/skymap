@@ -1,16 +1,17 @@
 import { Angle } from "./Angle";
+import type { Coo } from "./Coo";
 import { getLocalSiderealTime } from "./date";
-
-type Coo = {
-	x: number;
-	y: number;
-};
+import { equatorialToHorizontal } from "./helper/angle";
 
 type SkyMapOptions = {
 	latitude?: number;
 	longitude?: number;
 	datetime?: Date;
 	fov?: number;
+	gridColor?: string;
+	starColor?: string;
+	bgColor?: string;
+	borderColor?: string;
 };
 
 export class SkyMap {
@@ -27,12 +28,21 @@ export class SkyMap {
 	private altitude: Angle;
 	private fov: number;
 
+	private gridColor: string;
+	private starColor: string;
+	private bgColor: string;
+	private borderColor: string;
+
 	constructor(container: HTMLDivElement, options: SkyMapOptions = {}) {
 		const {
 			latitude = 0,
 			longitude = 0,
 			datetime = new Date(),
 			fov = 90,
+			gridColor = "#444444",
+			starColor = "#ffffff",
+			bgColor = "#000000",
+			borderColor = "#f00",
 		} = options;
 
 		this.container = container;
@@ -49,6 +59,11 @@ export class SkyMap {
 			x: this.canvas.width / 2,
 			y: this.canvas.height / 2,
 		};
+
+		this.gridColor = gridColor;
+		this.starColor = starColor;
+		this.bgColor = bgColor;
+		this.borderColor = borderColor;
 
 		this.latitude = Angle.fromDegrees(latitude);
 		this.longitude = Angle.fromDegrees(longitude);
@@ -75,7 +90,6 @@ export class SkyMap {
 	}
 
 	// Approximate calculation for sidereal time in degrees
-
 	private project(
 		alt: Angle,
 		az: Angle,
@@ -113,7 +127,7 @@ export class SkyMap {
 		this.drawCircle(this.center, this.radius, "white");
 		this.ctx.clip();
 
-		// Draw equatorial grid rotated by LST
+		this.ctx.strokeStyle = this.gridColor;
 		for (let decDeg = -80; decDeg <= 80; decDeg += 10) {
 			const declination = Angle.fromDegrees(decDeg);
 			this.ctx.beginPath();
@@ -121,9 +135,8 @@ export class SkyMap {
 
 			for (let raDeg = 0; raDeg <= 360; raDeg += 5) {
 				const ra = Angle.fromDegrees(raDeg);
-				// Convert equatorial to horizontal coordinates
 				const ha = lst.subtract(ra);
-				const coords = this.equatorialToHorizontal(ha, declination);
+				const coords = equatorialToHorizontal(ha, declination, this.latitude);
 				const point = this.project(coords.altitude, coords.azimuth);
 
 				if (point.visible) {
@@ -135,20 +148,22 @@ export class SkyMap {
 					}
 				}
 			}
-			this.ctx.strokeStyle = "#444444";
 			this.ctx.stroke();
 		}
 
-		// Draw right ascension lines
 		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
 			const ra = Angle.fromDegrees(raDeg);
 			this.ctx.beginPath();
 			let firstPoint = true;
 
-			for (let decDeg = -90; decDeg <= 90; decDeg += 5) {
+			for (
+				let decDeg = -90;
+				decDeg <= (raDeg % 90 === 0 ? 90 : 80);
+				decDeg += 5
+			) {
 				const declination = Angle.fromDegrees(decDeg);
 				const ha = lst.subtract(ra);
-				const coords = this.equatorialToHorizontal(ha, declination);
+				const coords = equatorialToHorizontal(ha, declination, this.latitude);
 				const point = this.project(coords.altitude, coords.azimuth);
 
 				if (point.visible) {
@@ -160,7 +175,6 @@ export class SkyMap {
 					}
 				}
 			}
-			this.ctx.strokeStyle = "#444444";
 			this.ctx.stroke();
 		}
 
@@ -188,42 +202,12 @@ export class SkyMap {
 
 		// Draw the boundary circle
 		this.ctx.beginPath();
-		this.drawCircle({ x: this.radius, y: this.radius }, this.radius, "#f00", 4);
-		this.ctx.stroke();
-	}
-
-	private equatorialToHorizontal(
-		hourAngle: Angle,
-		declination: Angle,
-	): {
-		altitude: Angle;
-		azimuth: Angle;
-	} {
-		// Calculate altitude
-		const sinAltitude =
-			this.latitude.sin * declination.sin +
-			this.latitude.cos * declination.cos * hourAngle.cos;
-		const altitude = Angle.fromRadians(Math.asin(sinAltitude));
-
-		// Calculate azimuth
-		const cosAzimuth =
-			(declination.sin - this.latitude.sin * sinAltitude) /
-			(this.latitude.cos * Math.cos(Math.asin(sinAltitude)));
-
-		// Clamp cosAzimuth to [-1,1] and convert to degrees
-		const baseAzimuth = Angle.fromRadians(
-			Math.acos(Math.max(-1, Math.min(1, cosAzimuth))),
+		this.drawCircle(
+			{ x: this.radius, y: this.radius },
+			this.radius,
+			this.borderColor,
+			4,
 		);
-
-		// Determine final azimuth based on hour angle
-		const finalAzimuth =
-			hourAngle.sin > 0
-				? Angle.fromDegrees(360).subtract(baseAzimuth)
-				: baseAzimuth;
-
-		return {
-			altitude,
-			azimuth: finalAzimuth,
-		};
+		this.ctx.stroke();
 	}
 }

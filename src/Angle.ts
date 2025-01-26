@@ -21,12 +21,6 @@ export class Angle {
 		return new Angle(radians, "rad");
 	}
 
-	// normalize(): Angle {
-	// 	this._radians =
-	// 		((this._radians % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-	// 	return this;
-	// }
-
 	add(other: Angle): Angle {
 		return new Angle(this._radians + other._radians, "rad");
 	}
