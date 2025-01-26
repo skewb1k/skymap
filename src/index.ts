@@ -1,10 +1,11 @@
-import stars from "../data/stars.6.json";
+import starsData from "../data/stars.6.json";
 import { Angle } from "./Angle";
 import { getLocalSiderealTime } from "./date";
 import { equatorialToHorizontal } from "./helper/angle";
 import { bvToRGB } from "./helper/color";
 import type { Coo } from "./types/Coo.type";
 import type { Star } from "./types/Star.type";
+import type { StarsData } from "./types/StarsData.type";
 
 type SkyMapOptions = {
 	latitude?: number;
@@ -44,7 +45,7 @@ export class SkyMap {
 	private borderColor: string;
 	private borderWidth: number;
 
-	private stars: Star[];
+	private stars: StarsData;
 
 	private starColors: boolean;
 
@@ -106,7 +107,7 @@ export class SkyMap {
 		this.altitude = zenithCoords.altitude;
 		this.azimuth = zenithCoords.azimuth;
 
-		this.stars = stars;
+		this.stars = starsData;
 
 		this.starColors = starColors;
 
@@ -146,7 +147,7 @@ export class SkyMap {
 	}
 
 	private drawStars(): void {
-		stars.forEach((star) => {
+		this.stars.stars.forEach((star) => {
 			this.drawStar(
 				Angle.fromDegrees(star.lon),
 				Angle.fromDegrees(star.lat),
@@ -281,7 +282,9 @@ export class SkyMap {
 		const point = this.project(coords.altitude, coords.azimuth);
 
 		if (point.visible) {
-			const size = (6 - magnitude) * 0.5 * this.scaleMod; // todo: custom max mag
+			// star with mag = -1.44 will have size 4
+			const size =
+				(6 / 1.2 ** (magnitude + this.stars.mag.max)) * this.scaleMod;
 
 			const color = this.starColors ? bvToRGB(bv) : this.starColor;
 
