@@ -2,9 +2,9 @@ import { SkyMap } from "../src/index";
 
 const container = document.querySelector("#container") as HTMLDivElement;
 new SkyMap(container, {
-	latitude: -70,
-	longitude: 20,
-	datetime: new Date(2024, 12, 1, 9, 47),
+	latitude: 59.95,
+	longitude: 30.56,
+	datetime: new Date(2024, 11, 28, 4, 15),
 });
 
 // Get the DPR and size of the canvas

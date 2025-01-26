@@ -1,11 +1,13 @@
 import starsData from "../data/stars.6.json";
+import constellationsLinesData from "../data/constellations.lines2.json";
 import { Angle } from "./Angle";
 import { getLocalSiderealTime } from "./date";
 import { equatorialToHorizontal } from "./helper/angle";
 import { bvToRGB } from "./helper/color";
+import type { Constellation } from "./types/Constellation.type";
 import type { Coo } from "./types/Coo.type";
-import type { Star } from "./types/Star.type";
 import type { StarsData } from "./types/StarsData.type";
+import type { Star } from "./types/Star.type";
 
 type SkyMapOptions = {
 	latitude?: number;
@@ -19,6 +21,9 @@ type SkyMapOptions = {
 	borderColor?: string;
 	borderWidth?: number;
 	starColors?: boolean; //? rename
+	constellationColor?: string;
+	constellationWidth?: number;
+	showConstellations?: boolean;
 };
 
 export class SkyMap {
@@ -44,8 +49,11 @@ export class SkyMap {
 	private bgColor: string;
 	private borderColor: string;
 	private borderWidth: number;
+	private constellationColor: string;
+	private constellationWidth: number;
 
 	private stars: StarsData;
+	private constellationsLines: Constellation[];
 
 	private starColors: boolean;
 
@@ -62,6 +70,8 @@ export class SkyMap {
 			borderColor = "#f00",
 			borderWidth = 4,
 			starColors = false,
+			constellationColor = "#ffffff",
+			constellationWidth = 1,
 		} = options;
 
 		this.container = container;
@@ -85,6 +95,9 @@ export class SkyMap {
 		this.bgColor = bgColor;
 		this.borderColor = borderColor;
 		this.borderWidth = borderWidth;
+		this.constellationColor = constellationColor;
+		this.constellationWidth = constellationWidth;
+		this.starColors = starColors;
 
 		this.latitude = Angle.fromDegrees(latitude);
 		this.longitude = Angle.fromDegrees(longitude);
@@ -108,17 +121,27 @@ export class SkyMap {
 		this.azimuth = zenithCoords.azimuth;
 
 		this.stars = starsData;
-
-		this.starColors = starColors;
+		this.constellationsLines = constellationsLinesData.map((constellation) => ({
+			...constellation,
+			vertices: constellation.vertices.map((group) =>
+				group.map((pair) => pair as [number, number]),
+			),
+		}));
 
 		this.drawBg();
 		this.drawGrid();
 
 		this.drawStars();
+		this.drawConstellations();
 	}
-
 	private arcCircle(coo: Coo, radius: number): void {
 		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
+	}
+
+	private drawConstellations(): void {
+		this.constellationsLines.forEach((constellation) => {
+			this.drawConstellation(constellation);
+		});
 	}
 
 	private drawCircle(
@@ -148,12 +171,7 @@ export class SkyMap {
 
 	private drawStars(): void {
 		this.stars.stars.forEach((star) => {
-			this.drawStar(
-				Angle.fromDegrees(star.lon),
-				Angle.fromDegrees(star.lat),
-				star.mag,
-				star.bv,
-			);
+			this.drawStar(star);
 		});
 	}
 
@@ -183,6 +201,37 @@ export class SkyMap {
 		const projY = (finalY / (1 + finalZ)) * scale + this.radius;
 
 		return { coo: { x: projX, y: projY }, visible: finalZ > -1 };
+	}
+
+	private drawConstellation(constellation: Constellation): void {
+		this.ctx.strokeStyle = this.constellationColor;
+		this.ctx.lineWidth = this.constellationWidth * this.scaleMod;
+
+		this.ctx.strokeStyle = this.constellationColor;
+		this.ctx.lineWidth = this.constellationWidth * this.scaleMod;
+
+		constellation.vertices.forEach((segment) => {
+			this.ctx.beginPath();
+
+			segment.forEach((point, index) => {
+				const [ra, dec] = point;
+				const coords = equatorialToHorizontal(
+					this.lst.subtract(Angle.fromDegrees(ra)),
+					Angle.fromDegrees(dec),
+					this.latitude,
+				);
+
+				const projectedPoint = this.project(coords.altitude, coords.azimuth);
+
+				if (index === 0) {
+					this.ctx.moveTo(projectedPoint.coo.x, projectedPoint.coo.y);
+				} else {
+					this.ctx.lineTo(projectedPoint.coo.x, projectedPoint.coo.y);
+				}
+			});
+
+			this.ctx.stroke();
+		});
 	}
 
 	private drawGrid() {
@@ -276,17 +325,19 @@ export class SkyMap {
 		);
 	}
 
-	private drawStar(ra: Angle, dec: Angle, magnitude: number, bv: number): void {
-		const ha = this.lst.subtract(ra);
-		const coords = equatorialToHorizontal(ha, dec, this.latitude);
+	private drawStar(star: Star): void {
+		const coords = equatorialToHorizontal(
+			this.lst.subtract(Angle.fromDegrees(star.lon)),
+			Angle.fromDegrees(star.lat),
+			this.latitude,
+		);
 		const point = this.project(coords.altitude, coords.azimuth);
 
 		if (point.visible) {
 			// star with mag = -1.44 will have size 4
-			const size =
-				(6 / 1.2 ** (magnitude + this.stars.mag.max)) * this.scaleMod;
+			const size = (6 / 1.2 ** (star.mag + this.stars.mag.max)) * this.scaleMod;
 
-			const color = this.starColors ? bvToRGB(bv) : this.starColor;
+			const color = this.starColors ? bvToRGB(star.bv) : this.starColor;
 
 			this.drawDisk(point.coo, size, color);
 		}
