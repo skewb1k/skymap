@@ -6,12 +6,13 @@
 		"module": "ESNext",
 		"moduleDetection": "force",
 		"jsx": "react-jsx",
+		"esModuleInterop": true,
 		"allowJs": true,
 
 		// Bundler mode
 		"moduleResolution": "bundler",
 		"allowImportingTsExtensions": true,
-		"verbatimModuleSyntax": true,
+		"verbatimModuleSyntax": false,
 		"noEmit": true,
 
 		// Best practices
@@ -23,5 +24,14 @@
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false
-	}
+	},
+	"exclude": [
+		"node_modules",
+		"dist",
+		"build",
+		"out",
+		"coverage",
+		"public",
+		"**/*.test.ts"
+	]
 }

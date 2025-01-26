@@ -1,13 +1,12 @@
-import starsData from "../data/stars.6.json";
 import constellationsLinesData from "../data/constellations.lines.json";
+import starsData from "../data/stars.6.json";
 import { Angle } from "./Angle";
-import { getLocalSiderealTime } from "./date";
 import { equatorialToHorizontal } from "./helper/angle";
 import { bvToRGB } from "./helper/color";
 import type { Constellation } from "./types/Constellation.type";
 import type { Coo } from "./types/Coo.type";
-import type { StarsData } from "./types/StarsData.type";
 import type { Star } from "./types/Star.type";
+import type { StarsData } from "./types/StarsData.type";
 
 type SkyMapOptions = {
 	latitude?: number;
@@ -105,7 +104,8 @@ export class SkyMap {
 		this.fov = fov;
 
 		this.scaleMod = this.radius / 500;
-		this.lst = getLocalSiderealTime(this.datetime, this.longitude);
+		// this.lst = getLocalSiderealTime(this.datetime, this.longitude);
+		this.lst = Angle.fromDegrees(12);
 
 		// Convert Zenith Position to Alt/Az
 		const zenithCoords = equatorialToHorizontal(

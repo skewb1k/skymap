@@ -8,7 +8,9 @@
 		"build": "bun typecheck && bun build ./src --outdir ./dist",
 		"typecheck": "tsc --noEmit",
 		"format": "biome check --write .",
-		"lint": "biome check ."
+		"lint": "biome check .",
+		"test": "jest",
+		"coverage": "jest --coverage"
 	},
 	"author": "skewb1k",
 	"repository": {
@@ -21,6 +23,11 @@
 	"homepage": "https://github.com/skewb1k/skymap#readme",
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
+		"@jest/globals": "^29.7.0",
+		"@types/jest": "^29.5.14",
+		"@types/node": "^22.10.10",
+		"jest": "^29.7.0",
+		"ts-jest": "^29.2.5",
 		"typescript": "^5.7.3",
 		"vite": "^6.0.11"
 	}
