@@ -2,6 +2,7 @@ import stars from "../data/stars.6.json";
 import { Angle } from "./Angle";
 import { getLocalSiderealTime } from "./date";
 import { equatorialToHorizontal } from "./helper/angle";
+import { bvToRGB } from "./helper/color";
 import type { Coo } from "./types/Coo.type";
 import type { Star } from "./types/Star.type";
 
@@ -93,6 +94,8 @@ export class SkyMap {
 		this.scaleMod = this.radius / 500;
 
 		this.stars = stars;
+
+		this.starColors = starColors;
 
 		this.drawBg();
 		this.drawGrid();
@@ -261,35 +264,6 @@ export class SkyMap {
 		);
 	}
 
-	private bvToRGB(bv: number): string {
-		// B-V color index to RGB conversion
-		// Based on realistic stellar color transformation
-		const temp = 4600 * (1 / (0.92 * bv + 1.7) + 1 / (0.92 * bv + 0.62));
-
-		let r = 0;
-		let g = 0;
-		let b = 0;
-
-		if (temp <= 6000) {
-			// todo: adjust colors, maybe accound magnitude
-			r = 1;
-			g = 0.3 * Math.log(temp / 100 - 10);
-			b = 0.5;
-		} else {
-			r = 1.0;
-			g = 0.9;
-			b = 0.4 * Math.log(temp / 100 - 56);
-		}
-
-		// console.log(Math.round(r * 255));
-		// Ensure values are within 0-255 range
-		r = Math.max(0, Math.min(255, Math.round(r * 255)));
-		g = Math.max(0, Math.min(255, Math.round(g * 255)));
-		b = Math.max(0, Math.min(255, Math.round(b * 255)));
-
-		return `rgb(${r}, ${g}, ${b})`;
-	}
-
 	private drawStar(ra: Angle, dec: Angle, magnitude: number, bv: number): void {
 		const lst = getLocalSiderealTime(this.datetime, this.longitude);
 		const ha = lst.subtract(ra);
@@ -299,7 +273,7 @@ export class SkyMap {
 		if (point.visible) {
 			const size = (6 - magnitude) * 0.5 * this.scaleMod; // todo: custom max mag
 
-			const color = this.starColors ? this.bvToRGB(bv) : this.starColor;
+			const color = this.starColors ? bvToRGB(bv) : this.starColor;
 
 			this.drawDisk(point.coo, size, color);
 		}
