@@ -1,7 +1,9 @@
 import { Angle } from "./Angle";
 import { getLocalSiderealTime } from "./date";
 import { equatorialToHorizontal } from "./helper/angle";
-import type { Coo } from "./Coo";
+import type { Coo } from "./types/Coo.type";
+import stars from "../data/stars.6.json";
+import type { Star } from "./types/Star.type";
 
 type SkyMapOptions = {
 	latitude?: number;
@@ -38,6 +40,8 @@ export class SkyMap {
 	private bgColor: string;
 	private borderColor: string;
 	private borderWidth: number;
+
+	private stars: Star[];
 
 	constructor(container: HTMLDivElement, options: SkyMapOptions = {}) {
 		const {
@@ -84,14 +88,12 @@ export class SkyMap {
 
 		this.scaleMod = this.radius / 500;
 
+		this.stars = stars;
+
 		this.drawBg();
 		this.drawGrid();
 
-		this.drawStar(
-			Angle.fromDegrees(123.45), // Right Ascension
-			Angle.fromDegrees(45.67), // Declination
-			2.5,
-		);
+		this.drawStars();
 	}
 
 	private drawCircle(coo: Coo, radius: number, color: string, width = 1): void {
@@ -103,8 +105,18 @@ export class SkyMap {
 	private drawBg(): void {
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); // Clear previous drawings
 		this.ctx.beginPath();
-		this.drawCircle(this.center, this.radius, "black");
+		this.drawCircle(this.center, this.radius, this.bgColor);
 		this.ctx.fill();
+	}
+
+	private drawStars(): void {
+		stars.forEach((star) => {
+			this.drawStar(
+				Angle.fromDegrees(star.lon),
+				Angle.fromDegrees(star.lat),
+				star.mag,
+			);
+		});
 	}
 
 	// Approximate calculation for sidereal time in degrees
@@ -230,15 +242,14 @@ export class SkyMap {
 		this.ctx.stroke();
 	}
 
-	private drawStar(ra: Angle, dec: Angle, magnitude = 1): void {
+	private drawStar(ra: Angle, dec: Angle, magnitude: number): void {
 		const lst = getLocalSiderealTime(this.datetime, this.longitude);
 		const ha = lst.subtract(ra);
 		const coords = equatorialToHorizontal(ha, dec, this.latitude);
 		const point = this.project(coords.altitude, coords.azimuth);
 
 		if (point.visible) {
-			// Calculate star size based on magnitude (brighter stars = larger dots)
-			const size = Math.max(1, 6 - magnitude) * this.scaleMod;
+			const size = (6 - magnitude) * 0.5 * this.scaleMod; // todo: custom max mag
 
 			this.ctx.beginPath();
 			this.ctx.fillStyle = this.starColor;
