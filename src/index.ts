@@ -29,6 +29,8 @@ export class SkyMap {
 	private altitude: Angle;
 	private fov: number;
 
+	private modificator: number;
+
 	private gridColor: string;
 	private starColor: string;
 	private bgColor: string;
@@ -73,15 +75,17 @@ export class SkyMap {
 		this.longitude = Angle.fromDegrees(longitude);
 		this.datetime = datetime;
 		this.fov = fov;
-		this.altitude = Angle.fromDegrees(50);
-		this.azimuth = Angle.fromDegrees(100);
+		this.altitude = Angle.fromDegrees(0);
+		this.azimuth = Angle.fromDegrees(0);
+
+		this.modificator = this.radius / 500;
 
 		this.drawBg();
 		this.drawGrid();
 	}
 
 	private drawCircle(coo: Coo, radius: number, color: string, width = 1): void {
-		this.ctx.lineWidth = width;
+		this.ctx.lineWidth = width * this.modificator;
 		this.ctx.strokeStyle = color;
 		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
 	}
@@ -131,7 +135,9 @@ export class SkyMap {
 		this.drawCircle(this.center, this.radius, "white");
 		this.ctx.clip();
 
+		this.ctx.lineWidth = 1 * this.modificator;
 		this.ctx.strokeStyle = this.gridColor;
+
 		for (let decDeg = -80; decDeg <= 80; decDeg += 10) {
 			const declination = Angle.fromDegrees(decDeg);
 			this.ctx.beginPath();
