@@ -4,7 +4,7 @@ const container = document.querySelector("#container") as HTMLDivElement;
 new SkyMap(container, {
 	latitude: 59.95,
 	longitude: 30.56,
-	datetime: new Date(2024, 11, 28, 4, 15),
+	datetime: new Date(2024, 11, 28, 5, 17),
 });
 
 // Get the DPR and size of the canvas

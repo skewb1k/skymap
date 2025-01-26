@@ -1,5 +1,5 @@
 import starsData from "../data/stars.6.json";
-import constellationsLinesData from "../data/constellations.lines2.json";
+import constellationsLinesData from "../data/constellations.lines.json";
 import { Angle } from "./Angle";
 import { getLocalSiderealTime } from "./date";
 import { equatorialToHorizontal } from "./helper/angle";
@@ -210,9 +210,8 @@ export class SkyMap {
 		this.ctx.strokeStyle = this.constellationColor;
 		this.ctx.lineWidth = this.constellationWidth * this.scaleMod;
 
+		this.ctx.beginPath();
 		constellation.vertices.forEach((segment) => {
-			this.ctx.beginPath();
-
 			segment.forEach((point, index) => {
 				const [ra, dec] = point;
 				const coords = equatorialToHorizontal(
@@ -229,9 +228,8 @@ export class SkyMap {
 					this.ctx.lineTo(projectedPoint.coo.x, projectedPoint.coo.y);
 				}
 			});
-
-			this.ctx.stroke();
 		});
+		this.ctx.stroke();
 	}
 
 	private drawGrid() {

@@ -3,11 +3,11 @@
 input_file=$1
 output_file=$2
 
-jq '
+jq -c '
 [
     .features |.[] |
     {
-        id: .id,
+        id: .properties.id,
         rank: .properties.rank | tonumber,
         vertices: .geometry.coordinates
     }
