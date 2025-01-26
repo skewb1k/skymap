@@ -172,8 +172,8 @@ export class SkyMap {
 		const rotY = y * this.altitude.cos - z * this.altitude.sin;
 		const rotZ = y * this.altitude.sin + z * this.altitude.cos;
 
-		const finalX = rotX * this.azimuth.cos - rotY * this.azimuth.sin;
-		const finalY = rotX * this.azimuth.sin + rotY * this.azimuth.cos;
+		const finalX = rotY * this.azimuth.cos - rotX * this.azimuth.sin;
+		const finalY = rotX * this.azimuth.cos + rotY * this.azimuth.sin;
 		const finalZ = rotZ;
 
 		const scale =

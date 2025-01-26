@@ -2,8 +2,8 @@ import { SkyMap } from "../src/index";
 
 const container = document.querySelector("#container") as HTMLDivElement;
 new SkyMap(container, {
-	latitude: 70,
-	longitude: 10,
+	latitude: 50,
+	longitude: 20,
 	datetime: new Date(2024, 12, 1, 9, 47),
 });
 
