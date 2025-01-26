@@ -1,21 +1,7 @@
-const cc = document.body.querySelector("#container");
-if (!cc) {
-	throw new Error("Container not found");
-}
-const container = cc as HTMLDivElement;
+import { SkyMap } from "../src/index";
 
-const c = container.querySelector("canvas");
-if (!c) {
-	throw new Error("Canvas not found");
-}
-const canvas = c;
-
-const ctxx = canvas.getContext("2d");
-if (!ctxx) {
-	throw new Error("Canvas context not found");
-}
-
-const ctx = ctxx;
+const container = document.querySelector("#container") as HTMLDivElement;
+new SkyMap(container);
 
 // Get the DPR and size of the canvas
 // const dpr = window.devicePixelRatio;
@@ -32,22 +18,21 @@ const ctx = ctxx;
 // canvas.style.width = `${rect.width}px`;
 // canvas.style.height = `${rect.height}px`;
 
-function resizeCanvas() {
-	canvas.width = container.offsetWidth;
-	canvas.height = container.offsetHeight;
-}
-// Draw a black circle
-function drawCircle() {
-	const centerX = canvas.width / 2;
-	const centerY = canvas.height / 2;
-	const radius = Math.min(canvas.width, canvas.height) / 2; // Adjust size relative to canvas
+// for (let ra = 0; ra < 24; ra++) {
+// 	const angle = (ra / 24) * Math.PI * 2; // Convert RA to radians
+// 	const x = center.x + radius * Math.cos(angle);
+// 	const y = center.y - radius * Math.sin(angle);
+// 	ctx.beginPath();
+// 	ctx.moveTo(center.x, center.y);
+// 	ctx.lineTo(x, y);
+// 	ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+// 	ctx.stroke();
+// }
 
-	ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
-	ctx.beginPath();
-	ctx.arc(centerX, centerY, radius, 0, Math.PI * 2); // Circle at the center
-	ctx.fillStyle = "#000"; // Black color
-	ctx.fill();
-}
-
-resizeCanvas();
-drawCircle();
+// for (let dec = -80; dec <= 80; dec += 10) {
+// 	const r = (radius * (90 - Math.abs(dec))) / 90;
+// 	ctx.beginPath();
+// 	ctx.arc(center.x, center.y, r, 0, Math.PI * 2);
+// 	ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+// 	ctx.stroke();
+// }
