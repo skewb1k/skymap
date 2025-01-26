@@ -1,4 +1,5 @@
 import { Angle } from "./Angle";
+import { getLocalSiderealTime } from "./date";
 
 type Coo = {
 	x: number;
@@ -19,8 +20,8 @@ export class SkyMap {
 
 	private radius: number;
 	private center: Coo;
-	private latitude: number;
-	private longitude: number;
+	private latitude: Angle;
+	private longitude: Angle;
 	private datetime: Date;
 	private azimuth: Angle;
 	private altitude: Angle;
@@ -49,8 +50,8 @@ export class SkyMap {
 			y: this.canvas.height / 2,
 		};
 
-		this.latitude = latitude;
-		this.longitude = longitude;
+		this.latitude = Angle.fromDegrees(latitude);
+		this.longitude = Angle.fromDegrees(longitude);
 		this.datetime = datetime;
 		this.fov = fov;
 		this.altitude = Angle.fromDegrees(50);
@@ -60,37 +61,20 @@ export class SkyMap {
 		this.drawGrid();
 	}
 
-	private drawCircle(coo: Coo, radius: number, color: string, width = 1) {
+	private drawCircle(coo: Coo, radius: number, color: string, width = 1): void {
 		this.ctx.lineWidth = width;
 		this.ctx.strokeStyle = color;
 		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
 	}
 
-	private drawBg() {
+	private drawBg(): void {
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); // Clear previous drawings
 		this.ctx.beginPath();
 		this.drawCircle(this.center, this.radius, "black");
 		this.ctx.fill();
 	}
 
-	// todo: move out
-	private julianDate(date: Date): number {
-		return date.getTime() / 86400000.0 + 2440587.5;
-	}
-
 	// Approximate calculation for sidereal time in degrees
-	private getLocalSiderealTime(): Angle {
-		const J2000 = 2451545.0; // Julian date for 2000-01-01 12:00:00 TT
-		const julianDate = this.julianDate(this.datetime);
-		const centuries = (julianDate - J2000) / 36525.0; // Julian Century
-		const theta0 =
-			(280.46061837 +
-				360.98564736629 * (julianDate - 2451545) +
-				centuries * centuries * 0.000387933 -
-				(centuries * centuries * centuries) / 38710000) %
-			360;
-		return Angle.fromDegrees((theta0 + this.longitude) % 360);
-	}
 
 	private project(
 		alt: Angle,
@@ -121,7 +105,7 @@ export class SkyMap {
 	}
 
 	private drawGrid() {
-		const lst = this.getLocalSiderealTime();
+		const lst = getLocalSiderealTime(this.datetime, this.longitude);
 
 		// Create clipping region to limit drawing to circle
 		this.ctx.save();
@@ -131,7 +115,7 @@ export class SkyMap {
 
 		// Draw equatorial grid rotated by LST
 		for (let decDeg = -80; decDeg <= 80; decDeg += 10) {
-			const dec = Angle.fromDegrees(decDeg);
+			const declination = Angle.fromDegrees(decDeg);
 			this.ctx.beginPath();
 			let firstPoint = true;
 
@@ -139,7 +123,7 @@ export class SkyMap {
 				const ra = Angle.fromDegrees(raDeg);
 				// Convert equatorial to horizontal coordinates
 				const ha = lst.subtract(ra);
-				const coords = this.equatorialToHorizontal(ha, dec);
+				const coords = this.equatorialToHorizontal(ha, declination);
 				const point = this.project(coords.altitude, coords.azimuth);
 
 				if (point.visible) {
@@ -162,9 +146,9 @@ export class SkyMap {
 			let firstPoint = true;
 
 			for (let decDeg = -90; decDeg <= 90; decDeg += 5) {
-				const dec = Angle.fromDegrees(decDeg);
+				const declination = Angle.fromDegrees(decDeg);
 				const ha = lst.subtract(ra);
-				const coords = this.equatorialToHorizontal(ha, dec);
+				const coords = this.equatorialToHorizontal(ha, declination);
 				const point = this.project(coords.altitude, coords.azimuth);
 
 				if (point.visible) {
@@ -215,18 +199,16 @@ export class SkyMap {
 		altitude: Angle;
 		azimuth: Angle;
 	} {
-		const observerLatitudeRad = Angle.fromDegrees(this.latitude); //todo latitude angle
-
 		// Calculate altitude
 		const sinAltitude =
-			observerLatitudeRad.sin * declination.sin +
-			observerLatitudeRad.cos * declination.cos * hourAngle.cos;
+			this.latitude.sin * declination.sin +
+			this.latitude.cos * declination.cos * hourAngle.cos;
 		const altitude = Angle.fromRadians(Math.asin(sinAltitude));
 
 		// Calculate azimuth
 		const cosAzimuth =
-			(declination.sin - observerLatitudeRad.sin * sinAltitude) /
-			(observerLatitudeRad.cos * Math.cos(Math.asin(sinAltitude)));
+			(declination.sin - this.latitude.sin * sinAltitude) /
+			(this.latitude.cos * Math.cos(Math.asin(sinAltitude)));
 
 		// Clamp cosAzimuth to [-1,1] and convert to degrees
 		const baseAzimuth = Angle.fromRadians(
