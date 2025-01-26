@@ -236,7 +236,7 @@ export class SkyMap {
 		// Determine final azimuth based on hour angle
 		const finalAzimuth =
 			hourAngle.sin > 0
-				? baseAzimuth.subtract(Angle.fromDegrees(360))
+				? Angle.fromDegrees(360).subtract(baseAzimuth)
 				: baseAzimuth;
 
 		return {
