@@ -9,6 +9,7 @@ type SkyMapOptions = {
 	datetime?: Date;
 	fov?: number;
 	gridColor?: string;
+	gridWidth?: number;
 	starColor?: string;
 	bgColor?: string;
 	borderColor?: string;
@@ -29,9 +30,10 @@ export class SkyMap {
 	private altitude: Angle;
 	private fov: number;
 
-	private modificator: number;
+	private scaleMod: number;
 
 	private gridColor: string;
+	private gridWidth: number;
 	private starColor: string;
 	private bgColor: string;
 	private borderColor: string;
@@ -44,6 +46,7 @@ export class SkyMap {
 			datetime = new Date(),
 			fov = 90,
 			gridColor = "#444444",
+			gridWidth = 2,
 			starColor = "#ffffff",
 			bgColor = "#000000",
 			borderColor = "#f00",
@@ -66,6 +69,7 @@ export class SkyMap {
 		};
 
 		this.gridColor = gridColor;
+		this.gridWidth = gridWidth;
 		this.starColor = starColor;
 		this.bgColor = bgColor;
 		this.borderColor = borderColor;
@@ -78,14 +82,14 @@ export class SkyMap {
 		this.altitude = Angle.fromDegrees(0);
 		this.azimuth = Angle.fromDegrees(0);
 
-		this.modificator = this.radius / 500;
+		this.scaleMod = this.radius / 500;
 
 		this.drawBg();
 		this.drawGrid();
 	}
 
 	private drawCircle(coo: Coo, radius: number, color: string, width = 1): void {
-		this.ctx.lineWidth = width * this.modificator;
+		this.ctx.lineWidth = width * this.scaleMod;
 		this.ctx.strokeStyle = color;
 		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
 	}
@@ -135,7 +139,7 @@ export class SkyMap {
 		this.drawCircle(this.center, this.radius, "white");
 		this.ctx.clip();
 
-		this.ctx.lineWidth = 1 * this.modificator;
+		this.ctx.lineWidth = this.gridWidth * this.scaleMod;
 		this.ctx.strokeStyle = this.gridColor;
 
 		for (let decDeg = -80; decDeg <= 80; decDeg += 10) {
