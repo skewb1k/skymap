@@ -8,43 +8,42 @@ export function equatorialToHorizontal(
 	altitude: Angle;
 	azimuth: Angle;
 } {
-	if (Math.abs(latitude.degrees) >= 89.99) {
-		const altitude = Angle.fromDegrees(
-			90 -
-				(latitude.degrees > 0
-					? 90 - declination.degrees
-					: 90 + declination.degrees),
-		);
+	// if (Math.abs(latitude.degrees) >= 89.99) {
+	// 	const altitude = Angle.fromDegrees(
+	// 		90 -
+	// 			(latitude.degrees > 0
+	// 				? 90 - declination.degrees
+	// 				: 90 + declination.degrees),
+	// 	);
 
-		// At poles, azimuth is essentially the hour angle
-		// Adding/subtracting 180° depending on which pole
-		const azimuth = Angle.fromDegrees(
-			latitude.degrees > 0 ? hourAngle.degrees : hourAngle.degrees + 180,
-		);
+	// 	// At poles, azimuth is essentially the hour angle
+	// 	// Adding/subtracting 180° depending on which pole
+	// 	const azimuth = Angle.fromDegrees(
+	// 		latitude.degrees > 0 ? hourAngle.degrees : hourAngle.degrees + 180,
+	// 	);
 
-		return { altitude, azimuth };
-	}
-	const sinAltitude =
-		latitude.sin * declination.sin +
-		latitude.cos * declination.cos * hourAngle.cos;
-	const altitude = Angle.fromRadians(Math.asin(sinAltitude));
+	// 	return { altitude, azimuth };
+	// }
 
-	const cosAzimuth =
-		(declination.sin - latitude.sin * sinAltitude) /
-		(latitude.cos * Math.cos(Math.asin(sinAltitude)));
+	// Calculate altitude
 
-	// Clamp cosAzimuth to [-1,1] and convert to degrees
-	const baseAzimuth = Angle.fromRadians(
-		Math.acos(Math.max(-1, Math.min(1, cosAzimuth))),
+	const altitude = Angle.fromRadians(
+		Math.asin(
+			latitude.sin * declination.sin +
+				latitude.cos * declination.cos * hourAngle.cos,
+		),
 	);
 
-	const finalAzimuth =
-		hourAngle.sin > 0
-			? Angle.fromDegrees(360).subtract(baseAzimuth)
-			: baseAzimuth;
+	// Calculate azimuth
+	const azimuth = Angle.fromRadians(
+		Math.atan2(
+			-hourAngle.sin,
+			hourAngle.cos * latitude.sin - declination.tan * latitude.cos,
+		),
+	);
 
 	return {
-		altitude,
-		azimuth: finalAzimuth,
+		altitude: altitude,
+		azimuth: azimuth,
 	};
 }

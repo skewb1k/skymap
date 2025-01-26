@@ -103,8 +103,6 @@ export class SkyMap {
 		this.longitude = Angle.fromDegrees(longitude);
 		this.datetime = datetime;
 		this.fov = fov;
-		this.altitude = Angle.fromDegrees(0);
-		this.azimuth = Angle.fromDegrees(0);
 
 		this.scaleMod = this.radius / 500;
 		this.lst = getLocalSiderealTime(this.datetime, this.longitude);
@@ -119,6 +117,7 @@ export class SkyMap {
 		// Set the initial altitude and azimuth based on the zenith
 		this.altitude = zenithCoords.altitude;
 		this.azimuth = zenithCoords.azimuth;
+		console.log(this.altitude.degrees, this.azimuth.degrees);
 
 		this.stars = starsData;
 		this.constellationsLines = constellationsLinesData.map((constellation) => ({
@@ -131,8 +130,8 @@ export class SkyMap {
 		this.drawBg();
 		this.drawGrid();
 
-		this.drawStars();
-		this.drawConstellations();
+		// this.drawStars();
+		// this.drawConstellations();
 	}
 	private arcCircle(coo: Coo, radius: number): void {
 		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
@@ -140,7 +139,9 @@ export class SkyMap {
 
 	private drawConstellations(): void {
 		this.constellationsLines.forEach((constellation) => {
-			this.drawConstellation(constellation);
+			if (constellation.id === "UMi") {
+				this.drawConstellation(constellation);
+			}
 		});
 	}
 
@@ -183,6 +184,7 @@ export class SkyMap {
 		coo: Coo;
 		visible: boolean;
 	} {
+		const azM = this.azimuth.addDegrees(90);
 		const x = alt.cos * az.sin;
 		const y = alt.cos * az.cos;
 		const z = alt.sin;
@@ -191,14 +193,14 @@ export class SkyMap {
 		const rotY = y * this.altitude.cos - z * this.altitude.sin;
 		const rotZ = y * this.altitude.sin + z * this.altitude.cos;
 
-		const finalX = rotY * this.azimuth.cos - rotX * this.azimuth.sin;
-		const finalY = rotX * this.azimuth.cos + rotY * this.azimuth.sin;
+		const finalX = rotY * azM.cos - rotX * azM.sin;
+		const finalY = rotX * azM.cos + rotY * azM.sin;
 		const finalZ = rotZ;
 
 		const scale =
 			(this.radius * 2) / (2 * Math.tan((this.fov * Math.PI) / 360));
-		const projX = (finalX / (1 + finalZ)) * scale + this.radius;
-		const projY = (finalY / (1 + finalZ)) * scale + this.radius;
+		const projX = (finalX / (1 + finalZ)) * scale + this.center.x;
+		const projY = (finalY / (1 + finalZ)) * scale + this.center.y;
 
 		return { coo: { x: projX, y: projY }, visible: finalZ > -1 };
 	}
@@ -207,15 +209,12 @@ export class SkyMap {
 		this.ctx.strokeStyle = this.constellationColor;
 		this.ctx.lineWidth = this.constellationWidth * this.scaleMod;
 
-		this.ctx.strokeStyle = this.constellationColor;
-		this.ctx.lineWidth = this.constellationWidth * this.scaleMod;
-
 		this.ctx.beginPath();
 		constellation.vertices.forEach((segment) => {
 			segment.forEach((point, index) => {
 				const [ra, dec] = point;
 				const coords = equatorialToHorizontal(
-					this.lst.subtract(Angle.fromDegrees(ra)),
+					this.lst.add(Angle.fromDegrees(ra)),
 					Angle.fromDegrees(dec),
 					this.latitude,
 				);
@@ -240,8 +239,8 @@ export class SkyMap {
 		this.ctx.clip();
 
 		this.ctx.lineWidth = this.gridWidth * this.scaleMod;
-		this.ctx.strokeStyle = this.gridColor;
 
+		this.ctx.strokeStyle = this.gridColor;
 		for (let decDeg = -80; decDeg <= 80; decDeg += 10) {
 			const declination = Angle.fromDegrees(decDeg);
 			this.ctx.beginPath();
@@ -249,13 +248,14 @@ export class SkyMap {
 
 			for (let raDeg = 0; raDeg <= 360; raDeg += 5) {
 				const ra = Angle.fromDegrees(raDeg);
-				const ha = this.lst.subtract(ra);
+				const ha = this.lst.add(ra);
 				const coords = equatorialToHorizontal(ha, declination, this.latitude);
 				const point = this.project(coords.altitude, coords.azimuth);
 
 				if (point.visible) {
 					if (firstPoint) {
 						this.ctx.moveTo(point.coo.x, point.coo.y);
+						// console.log(point.coo.x, point.coo.y);
 						firstPoint = false;
 					} else {
 						this.ctx.lineTo(point.coo.x, point.coo.y);
@@ -266,6 +266,7 @@ export class SkyMap {
 		}
 
 		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
+			// this.ctx.strokeStyle = `hsl(${raDeg}deg 100% 50%)`;
 			const ra = Angle.fromDegrees(raDeg);
 			this.ctx.beginPath();
 			let firstPoint = true;
@@ -276,7 +277,7 @@ export class SkyMap {
 				decDeg += 5
 			) {
 				const declination = Angle.fromDegrees(decDeg);
-				const ha = this.lst.subtract(ra);
+				const ha = this.lst.add(ra).normalize();
 				const coords = equatorialToHorizontal(ha, declination, this.latitude);
 				const point = this.project(coords.altitude, coords.azimuth);
 
@@ -324,11 +325,11 @@ export class SkyMap {
 	}
 
 	private drawStar(star: Star): void {
-		const coords = equatorialToHorizontal(
-			this.lst.subtract(Angle.fromDegrees(star.lon)),
-			Angle.fromDegrees(star.lat),
-			this.latitude,
-		);
+		const starRa = Angle.fromDegrees(star.lon);
+		const starDec = Angle.fromDegrees(star.lat);
+
+		const hourAngle = this.lst.subtract(starRa).normalize();
+		const coords = equatorialToHorizontal(hourAngle, starDec, this.latitude);
 		const point = this.project(coords.altitude, coords.azimuth);
 
 		if (point.visible) {
