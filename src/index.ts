@@ -1,7 +1,7 @@
 import { Angle } from "./Angle";
-import type { Coo } from "./Coo";
 import { getLocalSiderealTime } from "./date";
 import { equatorialToHorizontal } from "./helper/angle";
+import type { Coo } from "./Coo";
 
 type SkyMapOptions = {
 	latitude?: number;
@@ -86,6 +86,12 @@ export class SkyMap {
 
 		this.drawBg();
 		this.drawGrid();
+
+		this.drawStar(
+			Angle.fromDegrees(123.45), // Right Ascension
+			Angle.fromDegrees(45.67), // Declination
+			2.5,
+		);
 	}
 
 	private drawCircle(coo: Coo, radius: number, color: string, width = 1): void {
@@ -106,8 +112,7 @@ export class SkyMap {
 		alt: Angle,
 		az: Angle,
 	): {
-		x: number;
-		y: number;
+		coo: Coo;
 		visible: boolean;
 	} {
 		const x = alt.cos * az.sin;
@@ -127,7 +132,7 @@ export class SkyMap {
 		const projX = (finalX / (1 + finalZ)) * scale + this.radius;
 		const projY = (finalY / (1 + finalZ)) * scale + this.radius;
 
-		return { x: projX, y: projY, visible: finalZ > -0.99 };
+		return { coo: { x: projX, y: projY }, visible: finalZ > -0.99 };
 	}
 
 	private drawGrid() {
@@ -155,10 +160,10 @@ export class SkyMap {
 
 				if (point.visible) {
 					if (firstPoint) {
-						this.ctx.moveTo(point.x, point.y);
+						this.ctx.moveTo(point.coo.x, point.coo.y);
 						firstPoint = false;
 					} else {
-						this.ctx.lineTo(point.x, point.y);
+						this.ctx.lineTo(point.coo.x, point.coo.y);
 					}
 				}
 			}
@@ -182,10 +187,10 @@ export class SkyMap {
 
 				if (point.visible) {
 					if (firstPoint) {
-						this.ctx.moveTo(point.x, point.y);
+						this.ctx.moveTo(point.coo.x, point.coo.y);
 						firstPoint = false;
 					} else {
-						this.ctx.lineTo(point.x, point.y);
+						this.ctx.lineTo(point.coo.x, point.coo.y);
 					}
 				}
 			}
@@ -223,5 +228,22 @@ export class SkyMap {
 			this.borderWidth,
 		);
 		this.ctx.stroke();
+	}
+
+	private drawStar(ra: Angle, dec: Angle, magnitude = 1): void {
+		const lst = getLocalSiderealTime(this.datetime, this.longitude);
+		const ha = lst.subtract(ra);
+		const coords = equatorialToHorizontal(ha, dec, this.latitude);
+		const point = this.project(coords.altitude, coords.azimuth);
+
+		if (point.visible) {
+			// Calculate star size based on magnitude (brighter stars = larger dots)
+			const size = Math.max(1, 6 - magnitude) * this.scaleMod;
+
+			this.ctx.beginPath();
+			this.ctx.fillStyle = this.starColor;
+			this.drawCircle(point.coo, size, this.starColor);
+			this.ctx.fill();
+		}
 	}
 }
