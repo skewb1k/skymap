@@ -1,3 +1,4 @@
+import modulo from "../../pkg/modulo";
 import AstronomicalTime from "./AstronomicalTime";
 
 describe("JulianDate", () => {
@@ -43,5 +44,49 @@ describe("JulianDate", () => {
 		const at = AstronomicalTime.fromUTCDate(new Date("2013-08-20T08:14:00Z"));
 		const jd = at.julianDate;
 		expect(jd).toBeCloseTo(2456524.843056, 6);
+	});
+});
+
+describe("Greenwich Sidereal Time (GST) calculations", () => {
+	test("GST calculation for J2000.0 epoch", () => {
+		const time = AstronomicalTime.fromUTCDate(new Date("2000-01-01T12:00:00Z"));
+		expect(time.GST).toBeCloseTo(18.697374558, 6);
+	});
+
+	test("GST calculation for known date 2000-01-01 12:00:00 UTC", () => {
+		const time = AstronomicalTime.fromUTCDate(new Date("2000-01-01T12:00:00Z"));
+		expect(time.GST).toBeCloseTo(18.697374558, 6);
+	});
+
+	test("GST calculation for 2024-01-15 00:00:00 UTC", () => {
+		const time = AstronomicalTime.fromUTCDate(new Date("2024-01-15T00:00:00Z"));
+		expect(time.GST).toBeCloseTo(7.596778047550469, 3);
+	});
+
+	test("GST stays within 0-24 hour range", () => {
+		const testDates = [
+			new Date("2023-12-31T12:00:00Z"),
+			new Date("2024-01-01T12:00:00Z"),
+			new Date("2024-01-02T12:00:00Z"),
+		];
+
+		testDates.forEach((jd) => {
+			const time = AstronomicalTime.fromUTCDate(jd);
+			const gst = time.GST;
+			expect(gst).toBeGreaterThanOrEqual(0);
+			expect(gst).toBeLessThan(24);
+		});
+	});
+
+	test("GST changes correctly over 24-hour period", () => {
+		const baseDate = new Date("2024-01-01T12:00:00Z");
+		const time1 = AstronomicalTime.fromUTCDate(baseDate);
+		const time2 = AstronomicalTime.fromUTCDate(
+			new Date(baseDate.getTime() + 24 * 60 * 60 * 1000),
+		);
+
+		// GST advances by ~24.0657 hours in one solar day
+		const expectedDiff = modulo(time2.GST - time1.GST, 24);
+		expect(expectedDiff).toBeCloseTo(0.0657, 3);
 	});
 });

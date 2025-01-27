@@ -59,18 +59,17 @@ export default class AstronomicalTime {
 	 * @returns The GST in hours (range: 0–24).
 	 */
 	get GST(): number {
-		const jd = this.julianDate;
-		const jd0 = Math.floor(jd - 0.5) + 0.5; // JD at 0h UTC
-		const d = jd0 - 2451545.0; // Days since J2000.0
+		const d = this.julianDate - 2451545.0; // Days since J2000.0
+		const gmstInDegrees = 280.46061837 + 360.98564736629 * d;
 
-		let gmstInDegrees = 280.46061837 + 360.98564736629 * d;
-		gmstInDegrees = ((gmstInDegrees % 360) + 360) % 360; // Normalize to 0–360
+		// Normalize to 0–360 degrees
+		const normalizedDegrees = modulo(gmstInDegrees, 360);
 
-		const fractionalDay = jd - jd0;
-		const gmstInHours =
-			gmstInDegrees / 15 + (360.98564736629 * fractionalDay) / 15;
+		// Convert to hours (1 hour = 15 degrees)
+		const gstInHours = normalizedDegrees / 15;
 
-		return modulo(gmstInHours, 24);
+		// Normalize to 0–24 hours
+		return modulo(gstInHours, 24);
 	}
 
 	/**
