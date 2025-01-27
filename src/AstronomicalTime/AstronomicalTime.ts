@@ -1,4 +1,5 @@
 import modulo from "../../pkg/modulo";
+import { Angle } from "../Angle";
 
 export default class AstronomicalTime {
 	private readonly date: Date;
@@ -58,27 +59,17 @@ export default class AstronomicalTime {
 	 * Calculates the Greenwich Sidereal Time (GST) in hours.
 	 * @returns The GST in hours (range: 0–24).
 	 */
-	get GST(): number {
+	get GST(): Angle {
 		const d = this.julianDate - 2451545.0; // Days since J2000.0
 		const gmstInDegrees = 280.46061837 + 360.98564736629 * d;
 
-		// Normalize to 0–360 degrees
-		const normalizedDegrees = modulo(gmstInDegrees, 360);
-
-		// Convert to hours (1 hour = 15 degrees)
-		const gstInHours = normalizedDegrees / 15;
-
-		// Normalize to 0–24 hours
-		return modulo(gstInHours, 24);
+		return Angle.fromDegrees(gmstInDegrees).normalize();
 	}
 
 	/**
 	 * Converts GST to Local Sidereal Time (LST) for a given longitude.
-	 * @param longitude - The longitude of the observer in degrees (east-positive).
-	 * @returns The LST in hours (range: 0–24).
 	 */
-	LST(longitude: number): number {
-		const gst = this.GST;
-		return modulo(gst + longitude / 15, 24);
+	LST(longitude: Angle): Angle {
+		return this.GST.add(longitude).normalize();
 	}
 }

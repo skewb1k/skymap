@@ -1,4 +1,4 @@
-import modulo from "../../pkg/modulo";
+import { Angle } from "../Angle";
 import AstronomicalTime from "./AstronomicalTime";
 
 describe("JulianDate", () => {
@@ -50,17 +50,17 @@ describe("JulianDate", () => {
 describe("Greenwich Sidereal Time (GST) calculations", () => {
 	test("GST calculation for J2000.0 epoch", () => {
 		const time = AstronomicalTime.fromUTCDate(new Date("2000-01-01T12:00:00Z"));
-		expect(time.GST).toBeCloseTo(18.697374558, 6);
+		expect(time.GST.hours).toBeCloseTo(18.697374558, 6);
 	});
 
 	test("GST calculation for known date 2000-01-01 12:00:00 UTC", () => {
 		const time = AstronomicalTime.fromUTCDate(new Date("2000-01-01T12:00:00Z"));
-		expect(time.GST).toBeCloseTo(18.697374558, 6);
+		expect(time.GST.hours).toBeCloseTo(18.697374558, 6);
 	});
 
 	test("GST calculation for 2024-01-15 00:00:00 UTC", () => {
 		const time = AstronomicalTime.fromUTCDate(new Date("2024-01-15T00:00:00Z"));
-		expect(time.GST).toBeCloseTo(7.596778047550469, 3);
+		expect(time.GST.hours).toBeCloseTo(7.596778047550469, 3);
 	});
 
 	test("GST stays within 0-24 hour range", () => {
@@ -72,7 +72,7 @@ describe("Greenwich Sidereal Time (GST) calculations", () => {
 
 		testDates.forEach((jd) => {
 			const time = AstronomicalTime.fromUTCDate(jd);
-			const gst = time.GST;
+			const gst = time.GST.hours;
 			expect(gst).toBeGreaterThanOrEqual(0);
 			expect(gst).toBeLessThan(24);
 		});
@@ -86,7 +86,49 @@ describe("Greenwich Sidereal Time (GST) calculations", () => {
 		);
 
 		// GST advances by ~24.0657 hours in one solar day
-		const expectedDiff = modulo(time2.GST - time1.GST, 24);
+		const expectedDiff = time2.GST.subtract(time1.GST).normalize().hours;
 		expect(expectedDiff).toBeCloseTo(0.0657, 3);
+	});
+});
+
+describe("AstronomicalTime LST calculations", () => {
+	test("calculates LST correctly for positive longitude", () => {
+		// 2024-01-01 00:00:00 UTC
+		const time = AstronomicalTime.fromUTCDate(new Date("2024-01-01T00:00:00Z"));
+		const longitude = Angle.fromDegrees(45); // 45° East
+		const lst = time.LST(longitude);
+
+		// LST should be GST + longitude
+		const expectedLST = time.GST.add(longitude).normalize();
+		expect(lst.degrees).toBeCloseTo(expectedLST.degrees, 6);
+	});
+
+	test("calculates LST correctly for negative longitude", () => {
+		// 2024-01-01 00:00:00 UTC
+		const time = AstronomicalTime.fromUTCDate(new Date("2024-01-01T00:00:00Z"));
+		const longitude = Angle.fromDegrees(-75); // 75° West
+		const lst = time.LST(longitude);
+
+		// LST should be GST + longitude
+		const expectedLST = time.GST.add(longitude).normalize();
+		expect(lst.degrees).toBeCloseTo(expectedLST.degrees, 6);
+	});
+
+	test("normalizes LST to 0-360 range", () => {
+		const time = AstronomicalTime.fromUTCDate(new Date("2024-01-01T00:00:00Z"));
+		const longitude = Angle.fromDegrees(355); // Near the 360° boundary
+		const lst = time.LST(longitude);
+
+		expect(lst.degrees).toBeGreaterThanOrEqual(0);
+		expect(lst.degrees).toBeLessThan(360);
+	});
+
+	test("LST calculation for Greenwich (0° longitude)", () => {
+		const time = AstronomicalTime.fromUTCDate(new Date("2024-01-01T00:00:00Z"));
+		const longitude = Angle.fromDegrees(0);
+		const lst = time.LST(longitude);
+
+		// At Greenwich, LST should equal GST
+		expect(lst.degrees).toBeCloseTo(time.GST.degrees, 6);
 	});
 });

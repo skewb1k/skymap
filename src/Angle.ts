@@ -1,6 +1,7 @@
 enum AngleUnit {
 	Degrees = 0,
 	Radians = 1,
+	Hours = 2,
 }
 
 export class Angle {
@@ -8,7 +9,11 @@ export class Angle {
 
 	private constructor(value: number, unit = AngleUnit.Degrees) {
 		this._radians =
-			unit === AngleUnit.Degrees ? (value * Math.PI) / 180 : value;
+			unit === AngleUnit.Degrees
+				? (value * Math.PI) / 180
+				: unit === AngleUnit.Hours
+					? (value * Math.PI) / 12
+					: value;
 	}
 
 	get degrees(): number {
@@ -19,12 +24,20 @@ export class Angle {
 		return this._radians;
 	}
 
+	get hours(): number {
+		return (this._radians * 12) / Math.PI;
+	}
+
 	static fromDegrees(degrees: number): Angle {
 		return new Angle(degrees, AngleUnit.Degrees);
 	}
 
 	static fromRadians(radians: number): Angle {
 		return new Angle(radians, AngleUnit.Radians);
+	}
+
+	static fromHours(hours: number): Angle {
+		return new Angle(hours, AngleUnit.Hours);
 	}
 
 	/**
@@ -50,6 +63,10 @@ export class Angle {
 
 	addDegrees(degrees: number): Angle {
 		return this.add(Angle.fromDegrees(degrees));
+	}
+
+	addRadians(radians: number): Angle {
+		return this.add(Angle.fromRadians(radians));
 	}
 
 	get sin(): number {
