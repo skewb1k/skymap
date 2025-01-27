@@ -1,4 +1,3 @@
-import modulo from "../../pkg/modulo";
 import { Angle } from "../Angle";
 
 export default class AstronomicalTime {
@@ -49,9 +48,6 @@ export default class AstronomicalTime {
 		// Calculate the fractional day from the time
 		const fractionalDay = (hour + minute / 60 + second / 3600) / 24;
 
-		//? Round to 6 decimal places
-		// return Number((JD0 + fractionalDay).toFixed(6));
-
 		return JD0 + fractionalDay;
 	}
 
@@ -62,7 +58,6 @@ export default class AstronomicalTime {
 	get GST(): Angle {
 		const d = this.julianDate - 2451545.0; // Days since J2000.0
 		const gmstInDegrees = 280.46061837 + 360.98564736629 * d;
-
 		return Angle.fromDegrees(gmstInDegrees).normalize();
 	}
 
