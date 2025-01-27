@@ -15,24 +15,35 @@ const minutes = String(now.getMinutes()).padStart(2, "0");
 
 dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
 
+const container = document.querySelector("#container") as HTMLDivElement;
+const sm = new SkyMap(container, {
+	latitude: Number(latInput.value),
+	longitude: Number(lonInput.value),
+	datetime: new Date(dateInput.value),
+});
+
 latRange.addEventListener("input", () => {
+	sm.setLatitude(Number(latRange.value));
 	latInput.value = latRange.value;
 });
+
 lonRange.addEventListener("input", () => {
+	sm.setLongitude(Number(lonRange.value));
 	lonInput.value = lonRange.value;
 });
 
 latInput.addEventListener("input", () => {
+	sm.setLatitude(Number(latInput.value));
 	latRange.value = latInput.value;
 });
+
 lonInput.addEventListener("input", () => {
+	sm.setLongitude(Number(lonInput.value));
 	lonRange.value = lonInput.value;
 });
 
-// SkyMap stuff
-const container = document.querySelector("#container") as HTMLDivElement;
-new SkyMap(container, {
-	// starColor: "#f00",
+dateInput.addEventListener("input", () => {
+	sm.setDatetime(new Date(dateInput.value));
 });
 
 // Get the DPR and size of the canvas

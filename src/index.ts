@@ -60,7 +60,7 @@ export class SkyMap {
 			datetime = new Date(),
 			fov = 90,
 			gridColor = "#555",
-			gridWidth = 2,
+			gridWidth = 4,
 			starColor = "#ffffff",
 			bgColor = "#000000",
 			borderColor = "#f00",
@@ -107,11 +107,34 @@ export class SkyMap {
 		}));
 
 		this.drawBg();
-		this.drawGrid();
+		this.render();
+	}
 
+	setLatitude(latitude: number): this {
+		this.latitude = Angle.fromDegrees(latitude);
+		this.render();
+		return this;
+	}
+
+	setLongitude(longitude: number): this {
+		this.longitude = Angle.fromDegrees(longitude);
+		this.render();
+		return this;
+	}
+
+	setDatetime(datetime: Date): this {
+		this.datetime = AstronomicalTime.fromUTCDate(datetime);
+		this.render();
+		return this;
+	}
+
+	private render(): void {
+		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.drawGrid();
 		// this.drawStars();
 		// this.drawConstellations();
 	}
+
 	private arcCircle(coo: Coo, radius: number): void {
 		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
 	}
@@ -146,7 +169,6 @@ export class SkyMap {
 	}
 
 	private drawBg(): void {
-		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.drawDisk(
 			{ x: this.radius, y: this.radius },
 			this.radius,
