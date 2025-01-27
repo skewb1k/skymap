@@ -216,6 +216,7 @@ export class SkyMap {
 				decDeg += 1
 			) {
 				const dec = Angle.fromDegrees(decDeg);
+
 				const { alt, az } = equatorialToHorizontal(
 					ra,
 					dec,

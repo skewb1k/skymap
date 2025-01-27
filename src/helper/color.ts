@@ -18,7 +18,6 @@ export function bvToRGB(bv: number): string {
 		b = 0.4 * Math.log(temp / 100 - 56);
 	}
 
-	// console.log(Math.round(r * 255));
 	// Ensure values are within 0-255 range
 	r = Math.max(0, Math.min(255, Math.round(r * 255)));
 	g = Math.max(0, Math.min(255, Math.round(g * 255)));

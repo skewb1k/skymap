@@ -1,5 +1,35 @@
 import { SkyMap } from "../src/index";
 
+const latRange = document.querySelector("#latitude-range") as HTMLInputElement;
+const latInput = document.querySelector("#latitude-input") as HTMLInputElement;
+const lonRange = document.querySelector("#longitude-range") as HTMLInputElement;
+const lonInput = document.querySelector("#longitude-input") as HTMLInputElement;
+const dateInput = document.querySelector("#datetime") as HTMLInputElement;
+
+const now = new Date();
+const year = now.getFullYear();
+const month = String(now.getMonth() + 1).padStart(2, "0");
+const day = String(now.getDate()).padStart(2, "0");
+const hours = String(now.getHours()).padStart(2, "0");
+const minutes = String(now.getMinutes()).padStart(2, "0");
+
+dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+latRange.addEventListener("input", () => {
+	latInput.value = latRange.value;
+});
+lonRange.addEventListener("input", () => {
+	lonInput.value = lonRange.value;
+});
+
+latInput.addEventListener("input", () => {
+	latRange.value = latInput.value;
+});
+lonInput.addEventListener("input", () => {
+	lonRange.value = lonInput.value;
+});
+
+// SkyMap stuff
 const container = document.querySelector("#container") as HTMLDivElement;
 new SkyMap(container, {
 	// starColor: "#f00",
