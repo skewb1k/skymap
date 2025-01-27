@@ -197,10 +197,10 @@ export class SkyMap {
 		this.ctx.strokeStyle = this.gridColor;
 
 		let firstValidPoint = true;
-
 		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
 			const ra = Angle.fromDegrees(raDeg);
 			this.ctx.beginPath();
+
 			for (
 				let decDeg = raDeg % 90 === 0 ? -90 : -80;
 				decDeg <= (raDeg % 90 === 0 ? 90 : 80);
@@ -221,8 +221,6 @@ export class SkyMap {
 				const x = this.radius + r * az.sin;
 				const y = this.radius - r * az.cos;
 
-				console.log(decDeg, alt.degrees, az.degrees, x, y);
-
 				if (firstValidPoint) {
 					this.ctx.moveTo(x, y);
 					firstValidPoint = false;
@@ -237,10 +235,9 @@ export class SkyMap {
 		for (let decDeg = -80; decDeg <= 80; decDeg += 20) {
 			const dec = Angle.fromDegrees(decDeg);
 
-			firstValidPoint = true;
 			this.ctx.beginPath();
 
-			for (let raDeg = 0; raDeg <= 360; raDeg += 1) {
+			for (let raDeg = 0; raDeg <= 360; raDeg += 2) {
 				const ra = Angle.fromDegrees(raDeg);
 
 				const { alt, az } = equatorialToHorizontal(
@@ -250,18 +247,16 @@ export class SkyMap {
 					this.longitude,
 					this.datetime,
 				);
-				// if (alt.degrees < 0) continue;
 
 				const r = (this.radius * (90 - alt.degrees)) / 90;
 				const x = this.radius + r * az.sin;
 				const y = this.radius - r * az.cos;
 
-				// if (firstValidPoint) {
-				// 	this.ctx.moveTo(x, y);
-				// 	firstValidPoint = false;
-				// } else {
-				this.ctx.lineTo(x, y);
-				// }
+				if (x < 0 || y < 0 || x > this.radius * 2 || y > this.radius * 2) {
+					this.ctx.moveTo(x, y);
+				} else {
+					this.ctx.lineTo(x, y);
+				}
 			}
 
 			this.ctx.stroke();
