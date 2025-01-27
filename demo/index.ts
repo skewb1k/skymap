@@ -2,8 +2,6 @@ import { SkyMap } from "../src/index";
 
 const container = document.querySelector("#container") as HTMLDivElement;
 new SkyMap(container, {
-	longitude: 23,
-	datetime: new Date(2023, 11, 12, 0, 0),
 	// starColor: "#f00",
 });
 

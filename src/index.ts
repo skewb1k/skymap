@@ -131,9 +131,10 @@ export class SkyMap {
 		width: number,
 	): void {
 		this.ctx.beginPath();
-		this.ctx.lineWidth = width * this.scaleMod;
+		const wi = width * this.scaleMod;
+		this.ctx.lineWidth = wi;
 		this.ctx.strokeStyle = color;
-		this.arcCircle(coo, radius);
+		this.arcCircle(coo, radius - wi / 2);
 		this.ctx.stroke();
 	}
 
@@ -185,18 +186,26 @@ export class SkyMap {
 	// 	this.ctx.stroke();
 	// }
 
-	private drawGrid() {
-		// Create clipping region to limit drawing to circle
-		this.ctx.save();
-		this.ctx.beginPath();
-		this.arcCircle({ x: this.radius, y: this.radius }, this.radius);
-		this.ctx.clip();
+	private checkIf(point: Coo): boolean {
+		return (
+			(point.x - this.radius) ** 2 + (point.y - this.radius) ** 2 >=
+			(this.radius * 0.99) ** 2
+		);
+	}
 
+	private moveTo(p: Coo) {
+		this.ctx.moveTo(p.x, p.y);
+	}
+
+	private lineTo(p: Coo) {
+		this.ctx.lineTo(p.x, p.y);
+	}
+
+	private drawGrid() {
 		this.ctx.lineWidth = this.gridWidth * this.scaleMod;
 
 		this.ctx.strokeStyle = this.gridColor;
 
-		let firstValidPoint = true;
 		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
 			const ra = Angle.fromDegrees(raDeg);
 			this.ctx.beginPath();
@@ -215,17 +224,20 @@ export class SkyMap {
 					this.datetime,
 				);
 
-				if (alt.degrees < 0) continue;
+				if (alt.degrees < 0) {
+					continue;
+				}
 
 				const r = (this.radius * (90 - alt.degrees)) / 90;
-				const x = this.radius + r * az.sin;
-				const y = this.radius - r * az.cos;
+				const coo = {
+					x: this.radius + r * az.sin,
+					y: this.radius - r * az.cos,
+				};
 
-				if (firstValidPoint) {
-					this.ctx.moveTo(x, y);
-					firstValidPoint = false;
+				if (this.checkIf(coo)) {
+					this.moveTo(coo);
 				} else {
-					this.ctx.lineTo(x, y);
+					this.lineTo(coo);
 				}
 			}
 
@@ -237,7 +249,7 @@ export class SkyMap {
 
 			this.ctx.beginPath();
 
-			for (let raDeg = 0; raDeg <= 360; raDeg += 2) {
+			for (let raDeg = 0; raDeg <= 360; raDeg += 1) {
 				const ra = Angle.fromDegrees(raDeg);
 
 				const { alt, az } = equatorialToHorizontal(
@@ -249,20 +261,20 @@ export class SkyMap {
 				);
 
 				const r = (this.radius * (90 - alt.degrees)) / 90;
-				const x = this.radius + r * az.sin;
-				const y = this.radius - r * az.cos;
+				const coo = {
+					x: this.radius + r * az.sin,
+					y: this.radius - r * az.cos,
+				};
 
-				if (x < 0 || y < 0 || x > this.radius * 2 || y > this.radius * 2) {
-					this.ctx.moveTo(x, y);
+				if (this.checkIf(coo)) {
+					this.moveTo(coo);
 				} else {
-					this.ctx.lineTo(x, y);
+					this.lineTo(coo);
 				}
 			}
 
 			this.ctx.stroke();
 		}
-
-		// this.ctx.restore();
 
 		// Draw the boundary circle
 		// this.drawCircle(
