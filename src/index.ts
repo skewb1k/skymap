@@ -1,10 +1,14 @@
 import constellationsLinesData from "../data/constellations.lines.json";
+import constellationsBordersData from "../data/constellations.borders.json";
 import starsData from "../data/stars.6.json";
 import { Angle } from "./Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
 import equatorialToHorizontal from "./helper/equatorialToHorizontal";
 import { bvToRGB } from "./helper/color";
-import type { Constellation } from "./types/Constellation.type";
+import type {
+	ConstellationLine,
+	ConstellationBorder,
+} from "./types/Constellation.type";
 import type { Coo } from "./types/Coo.type";
 import type { Star } from "./types/Star.type";
 import type { StarsData } from "./types/StarsData.type";
@@ -21,9 +25,11 @@ type SkyMapOptions = {
 	borderColor?: string;
 	borderWidth?: number;
 	starColors?: boolean; //? rename
-	constellationColor?: string;
-	constellationWidth?: number;
+	constellationLinesColor?: string;
+	constellationLinesWidth?: number;
 	showConstellations?: boolean;
+	constellationBordersColor?: string;
+	constellationBordersWidth?: number;
 };
 
 export class SkyMap {
@@ -47,11 +53,14 @@ export class SkyMap {
 	private bgColor: string;
 	private borderColor: string;
 	private borderWidth: number;
-	private constellationColor: string;
-	private constellationWidth: number;
+	private constellationLinesColor: string;
+	private constellationLinesWidth: number;
+	private constellationBordersColor: string;
+	private constellationBordersWidth: number;
 
 	private stars: StarsData;
-	private constellationsLines: Constellation[];
+	private constellationsLines: ConstellationLine[];
+	private constellationsBorders: ConstellationBorder[];
 
 	private starColors: boolean;
 
@@ -62,14 +71,16 @@ export class SkyMap {
 			datetime = new Date(),
 			fov = 90,
 			gridColor = "#333",
-			gridWidth = 4,
+			gridWidth = 2,
 			starColor = "#fefefe",
 			bgColor = "#000000",
 			borderColor = "#fefefe",
-			borderWidth = 3,
+			borderWidth = 1,
 			starColors = false,
-			constellationColor = "#fefefe",
-			constellationWidth = 1,
+			constellationLinesColor = "#fefefe",
+			constellationLinesWidth = 1,
+			constellationBordersColor = "#fefefe",
+			constellationBordersWidth = 1,
 		} = options;
 
 		this.container = container;
@@ -90,9 +101,11 @@ export class SkyMap {
 		this.bgColor = bgColor;
 		this.borderColor = borderColor;
 		this.borderWidth = borderWidth;
-		this.constellationColor = constellationColor;
-		this.constellationWidth = constellationWidth;
+		this.constellationLinesColor = constellationLinesColor;
+		this.constellationLinesWidth = constellationLinesWidth;
 		this.starColors = starColors;
+		this.constellationBordersColor = constellationBordersColor;
+		this.constellationBordersWidth = constellationBordersWidth;
 
 		this.latitude = Angle.fromDegrees(latitude);
 		this.longitude = Angle.fromDegrees(longitude);
@@ -101,7 +114,7 @@ export class SkyMap {
 
 		this.lst = this.datetime.LST(this.longitude);
 
-		this.scaleMod = this.radius / 500;
+		this.scaleMod = this.radius / 400;
 
 		this.stars = starsData;
 		this.constellationsLines = constellationsLinesData.map((constellation) => ({
@@ -110,6 +123,15 @@ export class SkyMap {
 				group.map((pair) => pair as [number, number]),
 			),
 		}));
+
+		this.constellationsBorders = constellationsBordersData.map(
+			(constellation) => ({
+				...constellation,
+				vertices: constellation.vertices.map((group) =>
+					group.map((pair) => pair as [number, number]),
+				),
+			}),
+		);
 
 		this.ctx.beginPath();
 		this.arcCircle(this.center, this.radius);
@@ -149,6 +171,7 @@ export class SkyMap {
 		this.drawGrid();
 		this.drawStars();
 		this.drawConstellations();
+		this.drawConstellationsBorders();
 	}
 
 	private arcCircle(coo: Coo, radius: number): void {
@@ -156,8 +179,64 @@ export class SkyMap {
 	}
 
 	private drawConstellations(): void {
+		this.ctx.strokeStyle = this.constellationLinesColor;
+		this.ctx.lineWidth = this.constellationLinesWidth * this.scaleMod;
 		this.constellationsLines.forEach((constellation) => {
-			this.drawConstellation(constellation);
+			this.ctx.beginPath();
+			for (const group of constellation.vertices) {
+				for (let j = 0; j < group.length; j++) {
+					const [raDeg, decDeg] = group[j];
+					const ra = Angle.fromDegrees(raDeg);
+					const dec = Angle.fromDegrees(decDeg);
+
+					const { alt, az } = equatorialToHorizontal(
+						ra,
+						dec,
+						this.latitude,
+						this.lst,
+					);
+
+					const coo = this.project(alt, az);
+
+					if (alt.degrees < -5 || j === 0) {
+						this.moveTo(coo);
+					} else {
+						this.lineTo(coo);
+					}
+				}
+			}
+			this.ctx.stroke();
+		});
+	}
+
+	private drawConstellationsBorders(): void {
+		this.ctx.strokeStyle = this.constellationBordersColor;
+		this.ctx.lineWidth = this.constellationBordersWidth * this.scaleMod;
+		this.constellationsBorders.forEach((constellation) => {
+			this.ctx.beginPath();
+			for (const group of constellation.vertices) {
+				for (let j = 0; j < group.length; j++) {
+					const [raDeg, decDeg] = group[j];
+					const ra = Angle.fromDegrees(raDeg);
+					const dec = Angle.fromDegrees(decDeg);
+
+					const { alt, az } = equatorialToHorizontal(
+						ra,
+						dec,
+						this.latitude,
+						this.lst,
+					);
+
+					const coo = this.project(alt, az);
+
+					if (alt.degrees < -5 || j === 0) {
+						this.moveTo(coo);
+					} else {
+						this.lineTo(coo);
+					}
+				}
+			}
+			this.ctx.stroke();
 		});
 	}
 
@@ -196,37 +275,6 @@ export class SkyMap {
 		this.stars.stars.forEach((star) => {
 			this.drawStar(star);
 		});
-	}
-
-	private drawConstellation(constellation: Constellation): void {
-		this.ctx.strokeStyle = this.constellationColor;
-		this.ctx.lineWidth = this.constellationWidth * this.scaleMod;
-
-		this.ctx.beginPath();
-		for (let i = 0; i < constellation.vertices.length; i++) {
-			for (let j = 0; j < constellation.vertices[i].length; j++) {
-				const [raDeg, decDeg] = constellation.vertices[i][j];
-				const ra = Angle.fromDegrees(raDeg);
-				const dec = Angle.fromDegrees(decDeg);
-
-				const { alt, az } = equatorialToHorizontal(
-					ra,
-					dec,
-					this.latitude,
-					this.lst,
-				);
-
-				const coo = this.project(alt, az);
-
-				if (alt.degrees < -5 || j === 0) {
-					this.moveTo(coo);
-				} else {
-					this.lineTo(coo);
-				}
-			}
-		}
-
-		this.ctx.stroke();
 	}
 
 	private moveTo(p: Coo) {
@@ -316,7 +364,7 @@ export class SkyMap {
 	}
 
 	private drawStar(star: Star): void {
-		if (star.mag > 5) return;
+		// if (star.mag > 5) return;
 		const starRa = Angle.fromDegrees(star.lon);
 		const starDec = Angle.fromDegrees(star.lat);
 
