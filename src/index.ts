@@ -32,6 +32,7 @@ export class SkyMap {
 	private ctx: CanvasRenderingContext2D;
 
 	private radius: number;
+	private center: Coo;
 	private latitude: Angle;
 	private longitude: Angle;
 	private datetime: AstronomicalTime;
@@ -80,6 +81,7 @@ export class SkyMap {
 		this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
 
 		this.radius = Math.min(this.canvas.width, this.canvas.height) / 2;
+		this.center = { x: this.canvas.width / 2, y: this.canvas.height / 2 };
 
 		this.gridColor = gridColor;
 		this.gridWidth = gridWidth;
@@ -106,7 +108,6 @@ export class SkyMap {
 			),
 		}));
 
-		this.drawBg();
 		this.render();
 	}
 
@@ -130,6 +131,7 @@ export class SkyMap {
 
 	private render(): void {
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.drawBg();
 		this.drawGrid();
 		// this.drawStars();
 		// this.drawConstellations();
@@ -208,13 +210,6 @@ export class SkyMap {
 	// 	this.ctx.stroke();
 	// }
 
-	private checkIf(point: Coo): boolean {
-		return (
-			(point.x - this.radius) ** 2 + (point.y - this.radius) ** 2 >=
-			(this.radius * 0.99) ** 2
-		);
-	}
-
 	private moveTo(p: Coo) {
 		this.ctx.moveTo(p.x, p.y);
 	}
@@ -224,10 +219,15 @@ export class SkyMap {
 	}
 
 	private drawGrid() {
+		// cut circle
+		this.ctx.beginPath();
+		this.arcCircle({ x: this.radius, y: this.radius }, this.radius);
+		this.ctx.clip();
+		this.ctx.closePath();
 		this.ctx.lineWidth = this.gridWidth * this.scaleMod;
+		// this.ctx.strokeStyle = this.gridColor;
 
-		this.ctx.strokeStyle = this.gridColor;
-
+		const now = performance.now();
 		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
 			const ra = Angle.fromDegrees(raDeg);
 			this.ctx.beginPath();
@@ -235,8 +235,9 @@ export class SkyMap {
 			for (
 				let decDeg = raDeg % 90 === 0 ? -90 : -80;
 				decDeg <= (raDeg % 90 === 0 ? 90 : 80);
-				decDeg += 1
+				decDeg += 2
 			) {
+				this.ctx.strokeStyle = `hsl(${(raDeg / 360) * 100}, 100%, 50%)`;
 				const dec = Angle.fromDegrees(decDeg);
 
 				const { alt, az } = equatorialToHorizontal(
@@ -253,15 +254,11 @@ export class SkyMap {
 
 				const r = (this.radius * (90 - alt.degrees)) / 90;
 				const coo = {
-					x: this.radius + r * az.sin,
-					y: this.radius - r * az.cos,
+					x: this.center.x + r * az.sin,
+					y: this.center.y - r * az.cos,
 				};
 
-				if (this.checkIf(coo)) {
-					this.moveTo(coo);
-				} else {
-					this.lineTo(coo);
-				}
+				this.lineTo(coo);
 			}
 
 			this.ctx.stroke();
@@ -269,10 +266,12 @@ export class SkyMap {
 
 		for (let decDeg = -80; decDeg <= 80; decDeg += 20) {
 			const dec = Angle.fromDegrees(decDeg);
-
 			this.ctx.beginPath();
 
-			for (let raDeg = 0; raDeg <= 360; raDeg += 1) {
+			let firstPointVisible = false;
+
+			for (let raDeg = 0; raDeg <= 360; raDeg += 2) {
+				this.ctx.strokeStyle = `hsl(${(decDeg * 2) % 360}, 100%, 50%)`;
 				const ra = Angle.fromDegrees(raDeg);
 
 				const { alt, az } = equatorialToHorizontal(
@@ -283,14 +282,20 @@ export class SkyMap {
 					this.datetime,
 				);
 
+				if (alt.degrees < -2) {
+					firstPointVisible = false;
+					continue;
+				}
+
 				const r = (this.radius * (90 - alt.degrees)) / 90;
 				const coo = {
-					x: this.radius + r * az.sin,
-					y: this.radius - r * az.cos,
+					x: this.center.x + r * az.sin,
+					y: this.center.y - r * az.cos,
 				};
 
-				if (this.checkIf(coo)) {
+				if (!firstPointVisible) {
 					this.moveTo(coo);
+					firstPointVisible = true;
 				} else {
 					this.lineTo(coo);
 				}
@@ -299,13 +304,8 @@ export class SkyMap {
 			this.ctx.stroke();
 		}
 
-		// Draw the boundary circle
-		// this.drawCircle(
-		// 	{ x: this.radius, y: this.radius },
-		// 	this.radius,
-		// 	this.borderColor,
-		// 	this.borderWidth,
-		// );
+		// console.log(performance.now() - now);
+		// console.log("drawGrid", count);
 	}
 
 	// private drawStar(star: Star): void {

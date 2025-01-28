@@ -21,14 +21,14 @@ export default function equatorialToHorizontal(
 	if (lat.degrees === 90) {
 		return {
 			alt,
-			az: lst.subtract(ra),
+			az: lst.subtract(ra).addDegrees(180),
 		};
 	}
 
 	if (lat.degrees === -90) {
 		return {
 			alt,
-			az: lst.add(ra),
+			az: ra.subtract(lst),
 		};
 	}
 
