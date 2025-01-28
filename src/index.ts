@@ -37,6 +37,7 @@ export class SkyMap {
 	private longitude: Angle;
 	private datetime: AstronomicalTime;
 	private fov: number;
+	private lst: Angle;
 
 	private scaleMod: number;
 
@@ -60,12 +61,12 @@ export class SkyMap {
 			longitude = 0,
 			datetime = new Date(),
 			fov = 90,
-			gridColor = "#555",
+			gridColor = "#333",
 			gridWidth = 4,
 			starColor = "#ffffff",
 			bgColor = "#000000",
 			borderColor = "#f00",
-			borderWidth = 4,
+			borderWidth = 3,
 			starColors = false,
 			constellationColor = "#ffffff",
 			constellationWidth = 1,
@@ -98,6 +99,8 @@ export class SkyMap {
 		this.datetime = AstronomicalTime.fromUTCDate(datetime);
 		this.fov = fov;
 
+		this.lst = this.datetime.LST(this.longitude);
+
 		this.scaleMod = this.radius / 500;
 
 		this.stars = starsData;
@@ -107,6 +110,11 @@ export class SkyMap {
 				group.map((pair) => pair as [number, number]),
 			),
 		}));
+
+		this.ctx.beginPath();
+		this.arcCircle(this.center, this.radius);
+		this.ctx.clip();
+		this.ctx.closePath();
 
 		this.render();
 	}
@@ -119,14 +127,20 @@ export class SkyMap {
 
 	setLongitude(longitude: number): this {
 		this.longitude = Angle.fromDegrees(longitude);
+		this.updateLST();
 		this.render();
 		return this;
 	}
 
 	setDatetime(datetime: Date): this {
 		this.datetime = AstronomicalTime.fromUTCDate(datetime);
+		this.updateLST();
 		this.render();
 		return this;
+	}
+
+	private updateLST() {
+		this.lst = this.datetime.LST(this.longitude);
 	}
 
 	private render(): void {
@@ -161,6 +175,7 @@ export class SkyMap {
 		this.ctx.strokeStyle = color;
 		this.arcCircle(coo, radius - wi / 2);
 		this.ctx.stroke();
+		this.ctx.closePath();
 	}
 
 	private drawDisk(coo: Coo, radius: number, color: string): void {
@@ -168,6 +183,7 @@ export class SkyMap {
 		this.ctx.fillStyle = color;
 		this.arcCircle(coo, radius);
 		this.ctx.fill();
+		this.ctx.closePath();
 	}
 
 	private drawBg(): void {
@@ -218,16 +234,18 @@ export class SkyMap {
 		this.ctx.lineTo(p.x, p.y);
 	}
 
-	private drawGrid() {
-		// cut circle
-		this.ctx.beginPath();
-		this.arcCircle({ x: this.radius, y: this.radius }, this.radius);
-		this.ctx.clip();
-		this.ctx.closePath();
-		this.ctx.lineWidth = this.gridWidth * this.scaleMod;
-		// this.ctx.strokeStyle = this.gridColor;
+	private project(alt: Angle, az: Angle): Coo {
+		const r = (this.radius * (90 - alt.degrees)) / 90;
+		return {
+			x: this.center.x + r * az.sin,
+			y: this.center.y - r * az.cos,
+		};
+	}
 
-		const now = performance.now();
+	private drawGrid() {
+		this.ctx.lineWidth = this.gridWidth * this.scaleMod;
+		this.ctx.strokeStyle = this.gridColor;
+
 		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
 			const ra = Angle.fromDegrees(raDeg);
 			this.ctx.beginPath();
@@ -237,27 +255,25 @@ export class SkyMap {
 				decDeg <= (raDeg % 90 === 0 ? 90 : 80);
 				decDeg += 2
 			) {
-				this.ctx.strokeStyle = `hsl(${(raDeg / 360) * 100}, 100%, 50%)`;
 				const dec = Angle.fromDegrees(decDeg);
-
 				const { alt, az } = equatorialToHorizontal(
 					ra,
 					dec,
 					this.latitude,
-					this.longitude,
-					this.datetime,
+					this.lst,
 				);
 
-				if (alt.degrees < 0) {
-					continue;
+				if (this.latitude.degrees === 0) {
+					if (alt.degrees < 0) {
+						continue;
+					}
+				} else {
+					if (alt.degrees < -1) {
+						continue;
+					}
 				}
 
-				const r = (this.radius * (90 - alt.degrees)) / 90;
-				const coo = {
-					x: this.center.x + r * az.sin,
-					y: this.center.y - r * az.cos,
-				};
-
+				const coo = this.project(alt, az);
 				this.lineTo(coo);
 			}
 
@@ -267,19 +283,16 @@ export class SkyMap {
 		for (let decDeg = -80; decDeg <= 80; decDeg += 20) {
 			const dec = Angle.fromDegrees(decDeg);
 			this.ctx.beginPath();
-
 			let firstPointVisible = false;
 
 			for (let raDeg = 0; raDeg <= 360; raDeg += 2) {
-				this.ctx.strokeStyle = `hsl(${(decDeg * 2) % 360}, 100%, 50%)`;
 				const ra = Angle.fromDegrees(raDeg);
 
 				const { alt, az } = equatorialToHorizontal(
 					ra,
 					dec,
 					this.latitude,
-					this.longitude,
-					this.datetime,
+					this.lst,
 				);
 
 				if (alt.degrees < -2) {
@@ -287,12 +300,7 @@ export class SkyMap {
 					continue;
 				}
 
-				const r = (this.radius * (90 - alt.degrees)) / 90;
-				const coo = {
-					x: this.center.x + r * az.sin,
-					y: this.center.y - r * az.cos,
-				};
-
+				const coo = this.project(alt, az);
 				if (!firstPointVisible) {
 					this.moveTo(coo);
 					firstPointVisible = true;
@@ -303,9 +311,6 @@ export class SkyMap {
 
 			this.ctx.stroke();
 		}
-
-		// console.log(performance.now() - now);
-		// console.log("drawGrid", count);
 	}
 
 	// private drawStar(star: Star): void {

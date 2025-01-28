@@ -1,17 +1,14 @@
 import { Angle } from "../Angle";
-import type AstronomicalTime from "../AstronomicalTime/AstronomicalTime";
 
 export default function equatorialToHorizontal(
 	ra: Angle,
 	dec: Angle,
 	lat: Angle,
-	lon: Angle,
-	date: AstronomicalTime,
+	lst: Angle,
 ): {
 	alt: Angle;
 	az: Angle;
 } {
-	const lst = date.LST(lon);
 	const ha = lst.subtract(ra);
 
 	const sinAlt = dec.sin * lat.sin + dec.cos * lat.cos * ha.cos;
@@ -21,20 +18,19 @@ export default function equatorialToHorizontal(
 	if (lat.degrees === 90) {
 		return {
 			alt,
-			az: lst.subtract(ra).addDegrees(180),
+			az: ha.addDegrees(180),
 		};
 	}
 
 	if (lat.degrees === -90) {
 		return {
 			alt,
-			az: ra.subtract(lst),
+			az: ha.multiply(-1),
 		};
 	}
 
 	const cosAz = (dec.sin - lat.sin * sinAlt) / (lat.cos * alt.cos);
 	const sinAz = (-ha.sin * dec.cos) / alt.cos;
 	const az = Angle.fromRadians(Math.atan2(sinAz, cosAz));
-
 	return { alt, az };
 }
