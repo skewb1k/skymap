@@ -63,12 +63,12 @@ export class SkyMap {
 			fov = 90,
 			gridColor = "#333",
 			gridWidth = 4,
-			starColor = "#ffffff",
+			starColor = "#fefefe",
 			bgColor = "#000000",
-			borderColor = "#f00",
+			borderColor = "#fefefe",
 			borderWidth = 3,
 			starColors = false,
-			constellationColor = "#ffffff",
+			constellationColor = "#fefefe",
 			constellationWidth = 1,
 		} = options;
 
@@ -147,21 +147,19 @@ export class SkyMap {
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.drawBg();
 		this.drawGrid();
-		// this.drawStars();
-		// this.drawConstellations();
+		this.drawStars();
+		this.drawConstellations();
 	}
 
 	private arcCircle(coo: Coo, radius: number): void {
 		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
 	}
 
-	// private drawConstellations(): void {
-	// 	this.constellationsLines.forEach((constellation) => {
-	// 		if (constellation.id === "UMi") {
-	// 			this.drawConstellation(constellation);
-	// 		}
-	// 	});
-	// }
+	private drawConstellations(): void {
+		this.constellationsLines.forEach((constellation) => {
+			this.drawConstellation(constellation);
+		});
+	}
 
 	private drawCircle(
 		coo: Coo,
@@ -194,37 +192,42 @@ export class SkyMap {
 		);
 	}
 
-	// private drawStars(): void {
-	// this.stars.stars.forEach((star) => {
-	// 	this.drawStar(star);
-	// });
-	// }
+	private drawStars(): void {
+		this.stars.stars.forEach((star) => {
+			this.drawStar(star);
+		});
+	}
 
-	// private drawConstellation(constellation: Constellation): void {
-	// 	this.ctx.strokeStyle = this.constellationColor;
-	// 	this.ctx.lineWidth = this.constellationWidth * this.scaleMod;
+	private drawConstellation(constellation: Constellation): void {
+		this.ctx.strokeStyle = this.constellationColor;
+		this.ctx.lineWidth = this.constellationWidth * this.scaleMod;
 
-	// 	this.ctx.beginPath();
-	// 	constellation.vertices.forEach((segment) => {
-	// 		segment.forEach((point, index) => {
-	// 			const [ra, dec] = point;
-	// 			const coords = equatorialToHorizontal(
-	// 				this.lst.add(Angle.fromDegrees(ra)),
-	// 				Angle.fromDegrees(dec),
-	// 				this.latitude,
-	// 			);
+		this.ctx.beginPath();
+		for (let i = 0; i < constellation.vertices.length; i++) {
+			for (let j = 0; j < constellation.vertices[i].length; j++) {
+				const [raDeg, decDeg] = constellation.vertices[i][j];
+				const ra = Angle.fromDegrees(raDeg);
+				const dec = Angle.fromDegrees(decDeg);
 
-	// 			const projectedPoint = this.project(coords.altitude, coords.azimuth);
+				const { alt, az } = equatorialToHorizontal(
+					ra,
+					dec,
+					this.latitude,
+					this.lst,
+				);
 
-	// 			if (index === 0) {
-	// 				this.ctx.moveTo(projectedPoint.coo.x, projectedPoint.coo.y);
-	// 			} else {
-	// 				this.ctx.lineTo(projectedPoint.coo.x, projectedPoint.coo.y);
-	// 			}
-	// 		});
-	// 	});
-	// 	this.ctx.stroke();
-	// }
+				const coo = this.project(alt, az);
+
+				if (alt.degrees < -5 || j === 0) {
+					this.moveTo(coo);
+				} else {
+					this.lineTo(coo);
+				}
+			}
+		}
+
+		this.ctx.stroke();
+	}
 
 	private moveTo(p: Coo) {
 		this.ctx.moveTo(p.x, p.y);
@@ -287,7 +290,6 @@ export class SkyMap {
 
 			for (let raDeg = 0; raDeg <= 360; raDeg += 2) {
 				const ra = Angle.fromDegrees(raDeg);
-
 				const { alt, az } = equatorialToHorizontal(
 					ra,
 					dec,
@@ -295,7 +297,7 @@ export class SkyMap {
 					this.lst,
 				);
 
-				if (alt.degrees < -2) {
+				if (alt.degrees < -3) {
 					firstPointVisible = false;
 					continue;
 				}
@@ -313,21 +315,27 @@ export class SkyMap {
 		}
 	}
 
-	// private drawStar(star: Star): void {
-	// 	const starRa = Angle.fromDegrees(star.lon);
-	// 	const starDec = Angle.fromDegrees(star.lat);
+	private drawStar(star: Star): void {
+		if (star.mag > 5) return;
+		const starRa = Angle.fromDegrees(star.lon);
+		const starDec = Angle.fromDegrees(star.lat);
 
-	// 	const hourAngle = this.lst.subtract(starRa).normalize();
-	// 	const coords = equatorialToHorizontal(hourAngle, starDec, this.latitude);
-	// 	const point = this.project(coords.altitude, coords.azimuth);
+		const { alt, az } = equatorialToHorizontal(
+			starRa,
+			starDec,
+			this.latitude,
+			this.lst,
+		);
 
-	// 	if (point.visible) {
-	// 		// star with mag = -1.44 will have size 4
-	// 		const size = (6 / 1.2 ** (star.mag + this.stars.mag.max)) * this.scaleMod;
+		if (alt.degrees < -2) return;
 
-	// 		const color = this.starColors ? bvToRGB(star.bv) : this.starColor;
+		const coo = this.project(alt, az);
 
-	// 		this.drawDisk(point.coo, size, color);
-	// 	}
-	// }
+		// star with mag = -1.44 will have size 8
+		const size = (10 / 1.2 ** (star.mag + this.stars.mag.max)) * this.scaleMod;
+
+		const color = this.starColors ? bvToRGB(star.bv) : this.starColor;
+
+		this.drawDisk(coo, size, color);
+	}
 }
