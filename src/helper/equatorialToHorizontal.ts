@@ -9,7 +9,7 @@ export default function equatorialToHorizontal(
 	alt: Angle;
 	az: Angle;
 } {
-	const ha = lst.subtract(ra);
+	const ha = ra.subtract(lst);
 
 	const sinAlt = dec.sin * lat.sin + dec.cos * lat.cos * ha.cos;
 	const alt = Angle.fromRadians(Math.asin(sinAlt));
