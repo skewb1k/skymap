@@ -170,7 +170,7 @@ export class SkyMap {
 		this.drawBg();
 		this.drawGrid();
 		this.drawStars();
-		this.drawConstellations();
+		this.drawConstellationsLines();
 		this.drawConstellationsBorders();
 	}
 
@@ -178,7 +178,7 @@ export class SkyMap {
 		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
 	}
 
-	private drawConstellations(): void {
+	private drawConstellationsLines(): void {
 		this.ctx.strokeStyle = this.constellationLinesColor;
 		this.ctx.lineWidth = this.constellationLinesWidth * this.scaleMod;
 		this.constellationsLines.forEach((constellation) => {
@@ -198,7 +198,7 @@ export class SkyMap {
 
 					const coo = this.project(alt, az);
 
-					if (alt.degrees < -5 || j === 0) {
+					if (alt.degrees < -45 || j === 0) {
 						this.moveTo(coo);
 					} else {
 						this.lineTo(coo);
@@ -229,7 +229,7 @@ export class SkyMap {
 
 					const coo = this.project(alt, az);
 
-					if (alt.degrees < -5 || j === 0) {
+					if (alt.degrees < -45) {
 						this.moveTo(coo);
 					} else {
 						this.lineTo(coo);

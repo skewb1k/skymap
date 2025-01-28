@@ -20,6 +20,9 @@ const sm = new SkyMap(container, {
 	latitude: Number(latInput.value),
 	longitude: Number(lonInput.value),
 	datetime: new Date(dateInput.value),
+	// constellationBordersColor: "#f00",
+	// gridColor: "#f00",
+	// constellationLinesColor: "#f00",
 });
 
 latRange.addEventListener("input", () => {
