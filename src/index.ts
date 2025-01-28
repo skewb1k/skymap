@@ -43,6 +43,7 @@ export class SkyMap {
 	private longitude: Angle;
 	private datetime: AstronomicalTime;
 	private fov: number;
+	private fovFactor: number;
 	private lst: Angle;
 
 	private scaleMod: number;
@@ -69,7 +70,7 @@ export class SkyMap {
 			latitude = 0,
 			longitude = 0,
 			datetime = new Date(),
-			fov = 90,
+			fov = 180,
 			gridColor = "#333",
 			gridWidth = 2,
 			starColor = "#fefefe",
@@ -79,7 +80,7 @@ export class SkyMap {
 			starColors = false,
 			constellationLinesColor = "#fefefe",
 			constellationLinesWidth = 1,
-			constellationBordersColor = "#fefefe",
+			constellationBordersColor = "#aaa",
 			constellationBordersWidth = 1,
 		} = options;
 
@@ -111,6 +112,7 @@ export class SkyMap {
 		this.longitude = Angle.fromDegrees(longitude);
 		this.datetime = AstronomicalTime.fromUTCDate(datetime);
 		this.fov = fov;
+		this.fovFactor = Math.tan(Angle.fromDegrees(this.fov / 4).radians);
 
 		this.lst = this.datetime.LST(this.longitude);
 
@@ -157,6 +159,13 @@ export class SkyMap {
 	setDatetime(datetime: Date): this {
 		this.datetime = AstronomicalTime.fromUTCDate(datetime);
 		this.updateLST();
+		this.render();
+		return this;
+	}
+
+	setFov(fov: number): this {
+		this.fov = fov;
+		this.fovFactor = Math.tan(Angle.fromDegrees(this.fov / 4).radians);
 		this.render();
 		return this;
 	}
@@ -286,7 +295,10 @@ export class SkyMap {
 	}
 
 	private project(alt: Angle, az: Angle): Coo {
-		const r = (this.radius * (90 - alt.degrees)) / 90;
+		const scalingFactor = this.radius / this.fovFactor;
+
+		// Calculate position on canvas with FoV scaling
+		const r = (scalingFactor * (90 - alt.degrees)) / 90; // Adjust for altitude
 		return {
 			x: this.center.x + r * az.sin,
 			y: this.center.y - r * az.cos,
@@ -380,7 +392,9 @@ export class SkyMap {
 		const coo = this.project(alt, az);
 
 		// star with mag = -1.44 will have size 8
-		const size = (10 / 1.2 ** (star.mag + this.stars.mag.max)) * this.scaleMod;
+		const size =
+			((8 / 1.25 ** (star.mag + this.stars.mag.max)) * this.scaleMod) /
+			this.fovFactor;
 
 		const color = this.starColors ? bvToRGB(star.bv) : this.starColor;
 

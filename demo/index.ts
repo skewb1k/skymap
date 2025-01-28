@@ -4,6 +4,8 @@ const latRange = document.querySelector("#latitude-range") as HTMLInputElement;
 const latInput = document.querySelector("#latitude-input") as HTMLInputElement;
 const lonRange = document.querySelector("#longitude-range") as HTMLInputElement;
 const lonInput = document.querySelector("#longitude-input") as HTMLInputElement;
+const fovRange = document.querySelector("#fov-range") as HTMLInputElement;
+const fovInput = document.querySelector("#fov-input") as HTMLInputElement;
 const dateInput = document.querySelector("#datetime") as HTMLInputElement;
 
 const now = new Date();
@@ -25,14 +27,19 @@ const sm = new SkyMap(container, {
 	// constellationLinesColor: "#f00",
 });
 
+fovRange.addEventListener("input", () => {
+	sm.setFov(Number(fovRange.value));
+	fovInput.value = fovRange.value;
+});
+
+fovInput.addEventListener("input", () => {
+	sm.setFov(Number(fovInput.value));
+	fovRange.value = fovInput.value;
+});
+
 latRange.addEventListener("input", () => {
 	sm.setLatitude(Number(latRange.value));
 	latInput.value = latRange.value;
-});
-
-lonRange.addEventListener("input", () => {
-	sm.setLongitude(Number(lonRange.value));
-	lonInput.value = lonRange.value;
 });
 
 latInput.addEventListener("input", () => {
@@ -43,6 +50,11 @@ latInput.addEventListener("input", () => {
 lonInput.addEventListener("input", () => {
 	sm.setLongitude(Number(lonInput.value));
 	lonRange.value = lonInput.value;
+});
+
+lonRange.addEventListener("input", () => {
+	sm.setLongitude(Number(lonRange.value));
+	lonInput.value = lonRange.value;
 });
 
 dateInput.addEventListener("input", () => {
