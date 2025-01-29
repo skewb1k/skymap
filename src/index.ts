@@ -149,6 +149,7 @@ export class SkyMap {
 
 	private render(): void {
 		this.drawer.clear();
+		// this.drawer.clipCircle();
 		this.drawBg();
 		if (this.showGrid) this.drawGrid();
 		if (this.showStars) this.drawStars();
@@ -179,6 +180,7 @@ export class SkyMap {
 	setFov(fov: number): this {
 		this.fov = fov;
 		this.fovFactor = Math.tan(Angle.fromDegrees(this.fov / 4).radians);
+		this.drawer.clipCircle();
 		this.render();
 		return this;
 	}
@@ -277,7 +279,7 @@ export class SkyMap {
 	private drawBg(): void {
 		this.drawer.drawDisk(
 			{ x: this.radius, y: this.radius },
-			this.radius * 1.01,
+			this.radius * 1.5,
 			this.colorConfig.bgColor,
 		);
 	}
@@ -310,7 +312,7 @@ export class SkyMap {
 			for (
 				let decDeg = raDeg % 90 === 0 ? -90 : -80;
 				decDeg <= (raDeg % 90 === 0 ? 90 : 80);
-				decDeg += 2
+				decDeg += 5
 			) {
 				const dec = Angle.fromDegrees(decDeg);
 				const { alt, az } = equatorialToHorizontal(
@@ -320,7 +322,7 @@ export class SkyMap {
 					this.lst,
 				);
 
-				if (this.latitude.degrees === 0) {
+				if (this.latitude.degrees > -1 && this.latitude.degrees < 1) {
 					if (alt.degrees < 0) {
 						continue;
 					}
@@ -342,7 +344,7 @@ export class SkyMap {
 			this.drawer.beginPath();
 			let firstPointVisible = false;
 
-			for (let raDeg = 0; raDeg <= 360; raDeg += 2) {
+			for (let raDeg = 0; raDeg <= 360; raDeg += 5) {
 				const ra = Angle.fromDegrees(raDeg);
 				const { alt, az } = equatorialToHorizontal(
 					ra,
