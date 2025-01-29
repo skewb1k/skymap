@@ -38,8 +38,8 @@ type SkyMapOptions = {
 	showConstellationsBorders?: boolean;
 	showStars?: boolean;
 	showGrid?: boolean;
-	colorConfig?: ColorConfig;
-	linesConfig?: LinesConfig;
+	colorConfig?: Partial<ColorConfig>;
+	linesConfig?: Partial<LinesConfig>;
 };
 
 export class SkyMap {
@@ -77,24 +77,25 @@ export class SkyMap {
 			showStars = true,
 			showGrid = true,
 			fov = 180,
-			colorConfig = {
-				gridColor: "#333",
-				starColor: "#fefefe",
-				bgColor: "#000000",
-				starsTemperature: false,
-				constellationLinesColor: "#fefefe",
-				constellationBordersColor: "#aaa",
-			},
-			linesConfig = {
-				constellationLinesWidth: 1,
-				constellationBordersWidth: 1,
-				gridWidth: 1,
-			},
 		} = options;
 
 		this.container = container;
-		this.colorConfig = colorConfig;
-		this.linesConfig = linesConfig;
+		this.colorConfig = {
+			gridColor: "#333",
+			starColor: "#fefefe",
+			bgColor: "#000000",
+			starsTemperature: false,
+			// constellationLinesColor: "#fefefea0",
+			constellationLinesColor: "rgba(100, 200, 255, 0.4)",
+			constellationBordersColor: "#aaa",
+			...options.colorConfig,
+		};
+		this.linesConfig = {
+			constellationLinesWidth: 2,
+			constellationBordersWidth: 1,
+			gridWidth: 0.5,
+			...options.linesConfig,
+		};
 		this.showConstellationsBorders = showConstellationsBorders;
 		this.showConstellationsLines = showConstellationsLines;
 		this.showStars = showStars;
@@ -109,11 +110,13 @@ export class SkyMap {
 		if (!canvas) {
 			throw new Error("Canvas not found");
 		}
-		canvas.width = this.container.offsetWidth;
-		canvas.height = this.container.offsetHeight;
 
-		this.radius = Math.min(canvas.width, canvas.height) / 2;
-		this.center = { x: canvas.width / 2, y: canvas.height / 2 };
+		this.radius =
+			Math.min(this.container.offsetWidth, this.container.offsetHeight) / 2;
+		canvas.width = this.radius * 2;
+		canvas.height = this.radius * 2;
+
+		this.center = { x: this.radius, y: this.radius };
 
 		this.drawer = new Drawer(canvas, this.radius / 400);
 
@@ -152,9 +155,9 @@ export class SkyMap {
 		// this.drawer.clipCircle();
 		this.drawBg();
 		if (this.showGrid) this.drawGrid();
-		if (this.showStars) this.drawStars();
 		if (this.showConstellationsLines) this.drawConstellationsLines();
 		if (this.showConstellationsBorders) this.drawConstellationsBorders();
+		if (this.showStars) this.drawStars();
 	}
 
 	setLatitude(latitude: number): this {
@@ -216,6 +219,9 @@ export class SkyMap {
 	private drawConstellationsLines(): void {
 		this.drawer.setColor(this.colorConfig.constellationLinesColor);
 		this.drawer.setLineWidth(this.linesConfig.constellationLinesWidth);
+		this.drawer.setBlur(5);
+		this.drawer.setShadowColor("rgba(100, 200, 255, 0.8)");
+
 		this.constellationsLines.forEach((constellation) => {
 			this.drawer.beginPath();
 			for (const group of constellation.vertices) {
@@ -247,6 +253,9 @@ export class SkyMap {
 	private drawConstellationsBorders(): void {
 		this.drawer.setColor(this.colorConfig.constellationBordersColor);
 		this.drawer.setLineWidth(this.linesConfig.constellationBordersWidth);
+
+		this.drawer.setBlur(5);
+		this.drawer.setShadowColor("#aaaa");
 
 		this.constellationsBorders.forEach((constellation) => {
 			this.drawer.beginPath();
@@ -303,6 +312,8 @@ export class SkyMap {
 
 	private drawGrid() {
 		this.drawer.setColor(this.colorConfig.gridColor);
+		this.drawer.setBlur(2);
+		this.drawer.setShadowColor("rgba(200, 200, 200, 0.2)");
 		this.drawer.setLineWidth(this.linesConfig.gridWidth);
 
 		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
@@ -340,6 +351,13 @@ export class SkyMap {
 		}
 
 		for (let decDeg = -80; decDeg <= 80; decDeg += 20) {
+			// skips equator if latitude is 90 or -90
+			if (
+				decDeg === 0 &&
+				(this.latitude.degrees === 90 || this.latitude.degrees === -90)
+			) {
+				continue;
+			}
 			const dec = Angle.fromDegrees(decDeg);
 			this.drawer.beginPath();
 			let firstPointVisible = false;
@@ -372,7 +390,7 @@ export class SkyMap {
 	}
 
 	private drawStar(star: Star): void {
-		if (star.mag > 5.2) return;
+		if (star.mag > 5.3) return;
 		const starRa = Angle.fromDegrees(star.lon);
 		const starDec = Angle.fromDegrees(star.lat);
 
@@ -388,10 +406,13 @@ export class SkyMap {
 		const coo = this.project(alt, az);
 
 		// star with mag = -1.44 will have size 8
-		const size = 8 / 1.2 ** (star.mag + this.stars.mag.max) / this.fovFactor;
+		const size = 10 / 1.2 ** (star.mag + this.stars.mag.max) / this.fovFactor;
 		const color = this.colorConfig.starsTemperature
 			? bvToRGB(star.bv)
 			: this.colorConfig.starColor;
+
+		this.drawer.setBlur(15);
+		this.drawer.setShadowColor("rgba(255, 255, 255, 0.8)");
 
 		this.drawer.drawDisk(coo, size, color);
 	}

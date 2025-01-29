@@ -29,7 +29,12 @@ export default class Drawer {
 	}
 
 	clear(): void {
-		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		// this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.setColor("black");
+		this.setBlur(0);
+		this.setShadowColor("rgba(0, 0, 0, 0)");
+		this.ctx.lineWidth = 1;
+		this.ctx.fillStyle = "black";
 	}
 
 	drawCircle(coo: Coo, radius: number, color: string, width: number): void {
@@ -50,12 +55,35 @@ export default class Drawer {
 		this.ctx.strokeStyle = color;
 	}
 
-	drawDisk(coo: Coo, radius: number, color: string): void {
+	setBlur(blur: number): void {
+		this.ctx.shadowBlur = blur;
+	}
+
+	setShadowColor(color: string): void {
+		this.ctx.shadowColor = color;
+	}
+
+	drawDisk(coo: Coo, radius: number, color: string | CanvasGradient): void {
 		this.ctx.beginPath();
 		this.ctx.fillStyle = color;
 		this.arcCircle(coo, radius);
 		this.ctx.fill();
 		this.ctx.closePath();
+	}
+
+	createGradient(coo: Coo, radius: number): CanvasGradient {
+		const gradient = this.ctx.createRadialGradient(
+			coo.x,
+			coo.y,
+			0,
+			coo.x,
+			coo.y,
+			radius,
+		);
+		gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+		gradient.addColorStop(0.4, "rgba(255, 255, 255, 0.8)");
+		gradient.addColorStop(1, "rgba(255, 255, 255, 0)"); // Fades out smoothly
+		return gradient;
 	}
 
 	moveTo(p: Coo) {
