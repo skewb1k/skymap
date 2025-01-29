@@ -12,6 +12,7 @@ import type {
 import type { Coo } from "./types/Coo.type";
 import type { Star } from "./types/Star.type";
 import type { StarsData } from "./types/StarsData.type";
+import Drawer from "./Drawer";
 
 type SkyMapOptions = {
 	latitude?: number;
@@ -34,8 +35,7 @@ type SkyMapOptions = {
 
 export class SkyMap {
 	private container: HTMLDivElement;
-	private canvas: HTMLCanvasElement;
-	private ctx: CanvasRenderingContext2D;
+	private drawer: Drawer;
 
 	private radius: number;
 	private center: Coo;
@@ -45,8 +45,6 @@ export class SkyMap {
 	private fov: number;
 	private fovFactor: number;
 	private lst: Angle;
-
-	private scaleMod: number;
 
 	private gridColor: string;
 	private gridWidth: number;
@@ -82,15 +80,15 @@ export class SkyMap {
 
 		this.container = container;
 
-		this.canvas = document.createElement("canvas");
-		this.canvas.width = this.container.offsetWidth;
-		this.canvas.height = this.container.offsetHeight;
-		this.container.appendChild(this.canvas);
+		const canvas = document.createElement("canvas");
+		canvas.width = this.container.offsetWidth;
+		canvas.height = this.container.offsetHeight;
+		this.container.appendChild(canvas);
 
-		this.ctx = this.canvas.getContext("2d") as CanvasRenderingContext2D;
+		this.radius = Math.min(canvas.width, canvas.height) / 2;
+		this.center = { x: canvas.width / 2, y: canvas.height / 2 };
 
-		this.radius = Math.min(this.canvas.width, this.canvas.height) / 2;
-		this.center = { x: this.canvas.width / 2, y: this.canvas.height / 2 };
+		this.drawer = new Drawer(canvas, this.radius / 400);
 
 		this.gridColor = gridColor;
 		this.gridWidth = gridWidth;
@@ -110,8 +108,6 @@ export class SkyMap {
 
 		this.lst = this.datetime.LST(this.longitude);
 
-		this.scaleMod = this.radius / 400;
-
 		this.stars = starsData;
 		this.constellationsLines = constellationsLinesData.map((constellation) => ({
 			...constellation,
@@ -129,10 +125,7 @@ export class SkyMap {
 			}),
 		);
 
-		this.ctx.beginPath();
-		this.arcCircle(this.center, this.radius);
-		this.ctx.clip();
-		this.ctx.closePath();
+		this.drawer.clipCircle();
 
 		this.render();
 	}
@@ -169,7 +162,6 @@ export class SkyMap {
 	}
 
 	private render(): void {
-		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.drawBg();
 		this.drawGrid();
 		this.drawStars();
@@ -177,15 +169,11 @@ export class SkyMap {
 		this.drawConstellationsBorders();
 	}
 
-	private arcCircle(coo: Coo, radius: number): void {
-		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
-	}
-
 	private drawConstellationsLines(): void {
-		this.ctx.strokeStyle = this.constellationLinesColor;
-		this.ctx.lineWidth = this.constellationLinesWidth * this.scaleMod;
+		this.drawer.setColor(this.constellationLinesColor);
+		this.drawer.setLineWidth(this.constellationLinesWidth);
 		this.constellationsLines.forEach((constellation) => {
-			this.ctx.beginPath();
+			this.drawer.beginPath();
 			for (const group of constellation.vertices) {
 				for (let j = 0; j < group.length; j++) {
 					const [raDeg, decDeg] = group[j];
@@ -202,21 +190,22 @@ export class SkyMap {
 					const coo = this.project(alt, az);
 
 					if (alt.degrees < -45 || j === 0) {
-						this.moveTo(coo);
+						this.drawer.moveTo(coo);
 					} else {
-						this.lineTo(coo);
+						this.drawer.lineTo(coo);
 					}
 				}
 			}
-			this.ctx.stroke();
+			this.drawer.stroke();
 		});
 	}
 
 	private drawConstellationsBorders(): void {
-		this.ctx.strokeStyle = this.constellationBordersColor;
-		this.ctx.lineWidth = this.constellationBordersWidth * this.scaleMod;
+		this.drawer.setColor(this.constellationBordersColor);
+		this.drawer.setLineWidth(this.constellationBordersWidth);
+
 		this.constellationsBorders.forEach((constellation) => {
-			this.ctx.beginPath();
+			this.drawer.beginPath();
 			for (const group of constellation.vertices) {
 				for (let j = 0; j < group.length; j++) {
 					const [raDeg, decDeg] = group[j];
@@ -233,41 +222,18 @@ export class SkyMap {
 					const coo = this.project(alt, az);
 
 					if (alt.degrees < -45) {
-						this.moveTo(coo);
+						this.drawer.moveTo(coo);
 					} else {
-						this.lineTo(coo);
+						this.drawer.lineTo(coo);
 					}
 				}
 			}
-			this.ctx.stroke();
+			this.drawer.stroke();
 		});
 	}
 
-	private drawCircle(
-		coo: Coo,
-		radius: number,
-		color: string,
-		width: number,
-	): void {
-		this.ctx.beginPath();
-		const wi = width * this.scaleMod;
-		this.ctx.lineWidth = wi;
-		this.ctx.strokeStyle = color;
-		this.arcCircle(coo, radius - wi / 2);
-		this.ctx.stroke();
-		this.ctx.closePath();
-	}
-
-	private drawDisk(coo: Coo, radius: number, color: string): void {
-		this.ctx.beginPath();
-		this.ctx.fillStyle = color;
-		this.arcCircle(coo, radius);
-		this.ctx.fill();
-		this.ctx.closePath();
-	}
-
 	private drawBg(): void {
-		this.drawDisk(
+		this.drawer.drawDisk(
 			{ x: this.radius, y: this.radius },
 			this.radius,
 			this.bgColor,
@@ -279,15 +245,6 @@ export class SkyMap {
 			this.drawStar(star);
 		});
 	}
-
-	private moveTo(p: Coo) {
-		this.ctx.moveTo(p.x, p.y);
-	}
-
-	private lineTo(p: Coo) {
-		this.ctx.lineTo(p.x, p.y);
-	}
-
 	private project(alt: Angle, az: Angle): Coo {
 		const scalingFactor = this.radius / this.fovFactor;
 
@@ -300,12 +257,12 @@ export class SkyMap {
 	}
 
 	private drawGrid() {
-		this.ctx.lineWidth = this.gridWidth * this.scaleMod;
-		this.ctx.strokeStyle = this.gridColor;
+		this.drawer.setColor(this.gridColor);
+		this.drawer.setLineWidth(this.gridWidth);
 
 		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
 			const ra = Angle.fromDegrees(raDeg);
-			this.ctx.beginPath();
+			this.drawer.beginPath();
 
 			for (
 				let decDeg = raDeg % 90 === 0 ? -90 : -80;
@@ -331,15 +288,15 @@ export class SkyMap {
 				}
 
 				const coo = this.project(alt, az);
-				this.lineTo(coo);
+				this.drawer.lineTo(coo);
 			}
 
-			this.ctx.stroke();
+			this.drawer.stroke();
 		}
 
 		for (let decDeg = -80; decDeg <= 80; decDeg += 20) {
 			const dec = Angle.fromDegrees(decDeg);
-			this.ctx.beginPath();
+			this.drawer.beginPath();
 			let firstPointVisible = false;
 
 			for (let raDeg = 0; raDeg <= 360; raDeg += 2) {
@@ -358,14 +315,14 @@ export class SkyMap {
 
 				const coo = this.project(alt, az);
 				if (!firstPointVisible) {
-					this.moveTo(coo);
+					this.drawer.moveTo(coo);
 					firstPointVisible = true;
 				} else {
-					this.lineTo(coo);
+					this.drawer.lineTo(coo);
 				}
 			}
 
-			this.ctx.stroke();
+			this.drawer.stroke();
 		}
 	}
 
@@ -386,12 +343,10 @@ export class SkyMap {
 		const coo = this.project(alt, az);
 
 		// star with mag = -1.44 will have size 8
-		const size =
-			((8 / 1.25 ** (star.mag + this.stars.mag.max)) * this.scaleMod) /
-			this.fovFactor;
+		const size = 8 / 1.25 ** (star.mag + this.stars.mag.max) / this.fovFactor;
 
 		const color = this.starColors ? bvToRGB(star.bv) : this.starColor;
 
-		this.drawDisk(coo, size, color);
+		this.drawer.drawDisk(coo, size, color);
 	}
 }
