@@ -24,7 +24,7 @@ type SkyMapOptions = {
 	bgColor?: string;
 	borderColor?: string;
 	borderWidth?: number;
-	starColors?: boolean; //? rename
+	starsTemperature?: boolean; //? rename
 	constellationLinesColor?: string;
 	constellationLinesWidth?: number;
 	showConstellations?: boolean;
@@ -52,8 +52,6 @@ export class SkyMap {
 	private gridWidth: number;
 	private starColor: string;
 	private bgColor: string;
-	private borderColor: string;
-	private borderWidth: number;
 	private constellationLinesColor: string;
 	private constellationLinesWidth: number;
 	private constellationBordersColor: string;
@@ -75,9 +73,7 @@ export class SkyMap {
 			gridWidth = 2,
 			starColor = "#fefefe",
 			bgColor = "#000000",
-			borderColor = "#fefefe",
-			borderWidth = 1,
-			starColors = false,
+			starsTemperature = false,
 			constellationLinesColor = "#fefefe",
 			constellationLinesWidth = 1,
 			constellationBordersColor = "#aaa",
@@ -100,11 +96,9 @@ export class SkyMap {
 		this.gridWidth = gridWidth;
 		this.starColor = starColor;
 		this.bgColor = bgColor;
-		this.borderColor = borderColor;
-		this.borderWidth = borderWidth;
 		this.constellationLinesColor = constellationLinesColor;
 		this.constellationLinesWidth = constellationLinesWidth;
-		this.starColors = starColors;
+		this.starColors = starsTemperature;
 		this.constellationBordersColor = constellationBordersColor;
 		this.constellationBordersWidth = constellationBordersWidth;
 
