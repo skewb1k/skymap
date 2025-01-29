@@ -8,6 +8,15 @@ const fovRange = document.querySelector("#fov-range") as HTMLInputElement;
 const fovInput = document.querySelector("#fov-input") as HTMLInputElement;
 const dateInput = document.querySelector("#datetime") as HTMLInputElement;
 
+const gridCheckbox = document.querySelector("#grid") as HTMLInputElement;
+const starsCheckbox = document.querySelector("#stars") as HTMLInputElement;
+const constellationsLinesCheckbox = document.querySelector(
+	"#constellations-lines",
+) as HTMLInputElement;
+const constellationsBordersCheckbox = document.querySelector(
+	"#constellations-borders",
+) as HTMLInputElement;
+
 const now = new Date();
 const year = now.getFullYear();
 const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -25,6 +34,22 @@ const sm = new SkyMap(container, {
 	// constellationBordersColor: "#f00",
 	// gridColor: "#f00",
 	// constellationLinesColor: "#f00",
+});
+
+gridCheckbox.addEventListener("change", () => {
+	sm.setShowGrid(gridCheckbox.checked);
+});
+
+starsCheckbox.addEventListener("change", () => {
+	sm.setShowStars(starsCheckbox.checked);
+});
+
+constellationsLinesCheckbox.addEventListener("change", () => {
+	sm.setShowConstellationsLines(constellationsLinesCheckbox.checked);
+});
+
+constellationsBordersCheckbox.addEventListener("change", () => {
+	sm.setShowConstellationsBorders(constellationsBordersCheckbox.checked);
 });
 
 fovRange.addEventListener("input", () => {
