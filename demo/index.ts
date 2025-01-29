@@ -29,7 +29,12 @@ const sm = new SkyMap(container, {
 	longitude: Number(lonInput.value),
 	datetime: new Date(dateInput.value),
 	colorConfig: {
-		bgColor: "#0a0d13",
+		// bgColor: "#0a0d13",
+		// gridColor: "#555",
+		// starColor: "#fefefe",
+		// starsTemperature: false,
+		// constellationLinesColor: "#64C8FF66",
+		// constellationBordersColor: "#aaa",
 	},
 	// constellationBordersColor: "#f00",
 	// gridColor: "#f00",
