@@ -100,10 +100,17 @@ export class SkyMap {
 		this.showStars = showStars;
 		this.showGrid = showGrid;
 
-		const canvas = document.createElement("canvas");
+		// const canvas = document.createElement("canvas");
+		// canvas.width = this.container.offsetWidth;
+		// canvas.height = this.container.offsetHeight;
+		// this.container.appendChild(canvas);
+
+		const canvas = this.container.querySelector("canvas");
+		if (!canvas) {
+			throw new Error("Canvas not found");
+		}
 		canvas.width = this.container.offsetWidth;
 		canvas.height = this.container.offsetHeight;
-		this.container.appendChild(canvas);
 
 		this.radius = Math.min(canvas.width, canvas.height) / 2;
 		this.center = { x: canvas.width / 2, y: canvas.height / 2 };
@@ -141,6 +148,7 @@ export class SkyMap {
 	}
 
 	private render(): void {
+		this.drawer.clear();
 		this.drawBg();
 		if (this.showGrid) this.drawGrid();
 		if (this.showStars) this.drawStars();
@@ -269,7 +277,7 @@ export class SkyMap {
 	private drawBg(): void {
 		this.drawer.drawDisk(
 			{ x: this.radius, y: this.radius },
-			this.radius,
+			this.radius * 1.01,
 			this.colorConfig.bgColor,
 		);
 	}
@@ -362,7 +370,7 @@ export class SkyMap {
 	}
 
 	private drawStar(star: Star): void {
-		// if (star.mag > 5) return;
+		if (star.mag > 5.2) return;
 		const starRa = Angle.fromDegrees(star.lon);
 		const starDec = Angle.fromDegrees(star.lat);
 
@@ -378,7 +386,7 @@ export class SkyMap {
 		const coo = this.project(alt, az);
 
 		// star with mag = -1.44 will have size 8
-		const size = 8 / 1.25 ** (star.mag + this.stars.mag.max) / this.fovFactor;
+		const size = 8 / 1.2 ** (star.mag + this.stars.mag.max) / this.fovFactor;
 		const color = this.colorConfig.starsTemperature
 			? bvToRGB(star.bv)
 			: this.colorConfig.starColor;

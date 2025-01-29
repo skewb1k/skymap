@@ -5,84 +5,90 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sky Map</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html,
     body {
       margin: 0;
-      /* min-height: 100vh; */
+      height: 100%;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      overflow: hidden;
-      background-color: #f0f0f0;
+      justify-content: center;
+      background-color: #1a1a2e;
+      color: white;
+      font-family: sans-serif;
     }
 
     #container {
       display: flex;
       justify-content: center;
       align-items: center;
-      aspect-ratio: 1 / 1;
-      margin: 10px 0;
-      width: 90vmin;
-      max-width: 1000px;
-      max-height: 1000px;
+      width: 100%;
     }
 
     canvas {
-      display: block;
       width: 100%;
       height: 100%;
+      aspect-ratio: 1 / 1;
     }
 
-    .controls {
-      transform: scale(2);
-      transform-origin: top left;
-      position: absolute;
+    label {
+      font-size: 1.2rem;
+      font-weight: bold;
+      user-select: none;
     }
   </style>
 </head>
 
 <body>
-  <div>
-    <div id="container"></div>
-    <div class="controls">
-      <div>
-        <label for="fov-range">Fov</label>
-        <input type="number" id="fov-input" value="180" min="0" max="180">
-        <input type="range" id="fov-range" min="1" max="180" value="180">
-      </div>
-      <div>
-        <label for="latitude-range">Latitude</label>
-        <input type="number" id="latitude-input" value="0" min="-90" max="90">
-        <input type="range" id="latitude-range" min="-90" max="90">
-      </div>
-      <div>
-        <label for="longitude-range">Longitude</label>
-        <input type="number" id="longitude-input" value="0" min="-180" max="180">
-        <input type="range" id="longitude-range" min="-180" max="180">
-      </div>
-      <div>
-        <label for="datetime">Datetime</label>
-        <input type="datetime-local" id="datetime">
-      </div>
-      <div>
-        <label for="grid">Grid</label>
-        <input type="checkbox" id="grid" checked>
-      </div>
-      <div>
-        <label for="stars">Stars</label>
-        <input type="checkbox" id="stars" checked>
-      </div>
-      <div>
-        <label for="constellations-lines">Constellations lines</label>
-        <input type="checkbox" id="constellations-lines" checked>
-      </div>
-      <div>
-        <label for="constellations-borders">Constellations borders</label>
-        <input type="checkbox" id="constellations-borders">
-      </div>
+  <div class="w-full flex flex-col items-center">
+    <div class="w-full flex justify-center" id="container">
+      <canvas id="canvas"></canvas>
     </div>
-    <script type="module" src="index.ts"></script>
+    <div class="mt-4 mb-4 p-4 bg-gray-800 rounded-lg shadow-lg w-full">
+      <form class="grid grid-cols-2 gap-4">
+        <div class="flex flex-col">
+          <label for="fov-range">FOV</label>
+          <input type="number" id="fov-input" class="p-2 rounded bg-gray-700 text-white" value="180" min="0" max="180">
+          <input type="range" id="fov-range" class="mt-2" min="1" max="180" value="180">
+        </div>
+        <div class="flex flex-col">
+          <label for="latitude-range">Latitude</label>
+          <input type="number" id="latitude-input" class="p-2 rounded bg-gray-700 text-white" value="0" min="-90"
+            max="90">
+          <input type="range" id="latitude-range" class="mt-2" min="-90" max="90">
+        </div>
+        <div class="flex flex-col">
+          <label for="longitude-range">Longitude</label>
+          <input type="number" id="longitude-input" class="p-2 rounded bg-gray-700 text-white" value="0" min="-180"
+            max="180">
+          <input type="range" id="longitude-range" class="mt-2" min="-180" max="180">
+        </div>
+        <div class="flex flex-col">
+          <label for="datetime">Datetime</label>
+          <input type="datetime-local" id="datetime" class="p-2 rounded bg-gray-700 text-white">
+        </div>
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" id="grid" checked>
+          <label for="grid">Grid</label>
+        </div>
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" id="stars" checked>
+          <label for="stars">Stars</label>
+        </div>
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" id="constellations-lines" checked>
+          <label for="constellations-lines">Constellation Lines</label>
+        </div>
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" id="constellations-borders">
+          <label for="constellations-borders">Constellation Borders</label>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script type="module" src="index.ts"></script>
 </body>
 
 </html>

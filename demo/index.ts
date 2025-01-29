@@ -27,6 +27,7 @@ const minutes = String(now.getMinutes()).padStart(2, "0");
 dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
 
 const container = document.querySelector("#container") as HTMLDivElement;
+
 const sm = new SkyMap(container, {
 	latitude: Number(latInput.value),
 	longitude: Number(lonInput.value),
