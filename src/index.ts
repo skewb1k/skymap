@@ -9,6 +9,7 @@ import type { ConstellationBorder, ConstellationLine } from "./types/Constellati
 import type { Coo } from "./types/Coo.type";
 import type { Star } from "./types/Star.type";
 import type { StarsData } from "./types/StarsData.type";
+import { Observer, Equator, Body } from "astronomy-engine";
 
 type ColorConfig = {
 	gridColor: string;
@@ -148,6 +149,7 @@ export class SkyMap {
 		if (this.showConstellationsLines) this.drawConstellationsLines();
 		if (this.showConstellationsBorders) this.drawConstellationsBorders();
 		if (this.showStars) this.drawStars();
+		this.drawPlanets();
 
 		this.ctx.beginPath();
 		this.ctx.shadowBlur = 0;
@@ -215,6 +217,26 @@ export class SkyMap {
 		this.lst = this.datetime.LST(this.longitude);
 	}
 
+	private moveTo(p: Coo) {
+		this.ctx.moveTo(p.x, p.y);
+	}
+
+	private lineTo(p: Coo) {
+		this.ctx.lineTo(p.x, p.y);
+	}
+
+	private arcCircle(coo: Coo, radius: number): void {
+		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
+	}
+
+	private drawDisk(coo: Coo, radius: number, color: string | CanvasGradient): void {
+		this.ctx.beginPath();
+		this.ctx.fillStyle = color;
+		this.arcCircle(coo, radius);
+		this.ctx.fill();
+		this.ctx.closePath();
+	}
+
 	private drawConstellationsLines(): void {
 		this.ctx.strokeStyle = this.colorConfig.constellationLinesColor;
 		this.ctx.lineWidth = this.linesConfig.constellationLinesWidth * this.scaleMod;
@@ -244,26 +266,6 @@ export class SkyMap {
 		});
 	}
 
-	private moveTo(p: Coo) {
-		this.ctx.moveTo(p.x, p.y);
-	}
-
-	private lineTo(p: Coo) {
-		this.ctx.lineTo(p.x, p.y);
-	}
-
-	private arcCircle(coo: Coo, radius: number): void {
-		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
-	}
-
-	private drawDisk(coo: Coo, radius: number, color: string | CanvasGradient): void {
-		this.ctx.beginPath();
-		this.ctx.fillStyle = color;
-		this.arcCircle(coo, radius);
-		this.ctx.fill();
-		this.ctx.closePath();
-	}
-
 	private drawConstellationsBorders(): void {
 		this.ctx.strokeStyle = this.colorConfig.constellationBordersColor;
 		this.ctx.lineWidth = this.linesConfig.constellationBordersWidth * this.scaleMod;
@@ -291,6 +293,63 @@ export class SkyMap {
 			}
 			this.ctx.stroke();
 		});
+	}
+
+	private drawPlanets(): void {
+		const observer = new Observer(this.latitude.degrees, this.longitude.degrees, 0);
+
+		const planets = [
+			{
+				name: Body.Mercury,
+				radius: 2,
+				color: "#b0b0b0",
+			},
+			{
+				name: Body.Venus,
+				radius: 5,
+				color: "#ffffe0",
+			},
+			{
+				name: Body.Mars,
+				radius: 3,
+				color: "#ff4500",
+			},
+			{
+				name: Body.Jupiter,
+				radius: 6,
+				color: "#e3a869",
+			},
+			{
+				name: Body.Saturn,
+				radius: 5.5,
+				color: "#ffcc99",
+			},
+			{
+				name: Body.Uranus,
+				radius: 1.5,
+				color: "#66ccff",
+			},
+			{
+				name: Body.Neptune,
+				radius: 1,
+				color: "#3366cc",
+			},
+		];
+		for (const planet of planets) {
+			const equatorial = Equator(planet.name, this.datetime.UTCDate, observer, true, true);
+
+			const ra = Angle.fromHours(equatorial.ra);
+			const dec = Angle.fromDegrees(equatorial.dec);
+
+			const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
+
+			const coo = this.project(alt, az);
+
+			this.ctx.shadowBlur = 15;
+			this.ctx.shadowColor = planet.color;
+
+			this.drawDisk(coo, (planet.radius * this.scaleMod) / this.fovFactor, planet.color);
+		}
 	}
 
 	private drawBg(): void {
