@@ -15,11 +15,7 @@ export class Angle {
 
 	private constructor(value: number, unit = AngleUnit.Radians) {
 		this._radians =
-			unit === AngleUnit.Degrees
-				? this.degToRad(value)
-				: unit === AngleUnit.Hours
-					? this.hoursToRad(value)
-					: value;
+			unit === AngleUnit.Degrees ? this.degToRad(value) : unit === AngleUnit.Hours ? this.hoursToRad(value) : value;
 	}
 
 	private degToRad(deg: number): number {

@@ -9,9 +9,7 @@ describe("JulianDate", () => {
 	});
 
 	test("calculates Julian Date for epoch J2000.0 (January 1, 2000 12:00:00 TT)", () => {
-		const at = AstronomicalTime.fromUTCDate(
-			new Date("2000-01-01T11:58:55.816Z"),
-		);
+		const at = AstronomicalTime.fromUTCDate(new Date("2000-01-01T11:58:55.816Z"));
 		const jd = at.julianDate;
 		expect(jd).toBeCloseTo(2451544.999248, 6);
 	});
@@ -81,9 +79,7 @@ describe("Greenwich Sidereal Time (GST) calculations", () => {
 	test("GST changes correctly over 24-hour period", () => {
 		const baseDate = new Date("2024-01-01T12:00:00Z");
 		const time1 = AstronomicalTime.fromUTCDate(baseDate);
-		const time2 = AstronomicalTime.fromUTCDate(
-			new Date(baseDate.getTime() + 24 * 60 * 60 * 1000),
-		);
+		const time2 = AstronomicalTime.fromUTCDate(new Date(baseDate.getTime() + 24 * 60 * 60 * 1000));
 
 		// GST advances by ~24.0657 hours in one solar day
 		const expectedDiff = time2.GST.subtract(time1.GST).normalize().hours;

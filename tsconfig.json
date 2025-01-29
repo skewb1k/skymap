@@ -25,13 +25,5 @@
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false
 	},
-	"exclude": [
-		"node_modules",
-		"dist",
-		"build",
-		"out",
-		"coverage",
-		"public",
-		"**/*.test.ts"
-	]
+	"exclude": ["node_modules", "dist", "build", "out", "coverage", "public", "**/*.test.ts"]
 }

@@ -10,12 +10,8 @@ const dateInput = document.querySelector("#datetime") as HTMLInputElement;
 
 const gridCheckbox = document.querySelector("#grid") as HTMLInputElement;
 const starsCheckbox = document.querySelector("#stars") as HTMLInputElement;
-const constellationsLinesCheckbox = document.querySelector(
-	"#constellations-lines",
-) as HTMLInputElement;
-const constellationsBordersCheckbox = document.querySelector(
-	"#constellations-borders",
-) as HTMLInputElement;
+const constellationsLinesCheckbox = document.querySelector("#constellations-lines") as HTMLInputElement;
+const constellationsBordersCheckbox = document.querySelector("#constellations-borders") as HTMLInputElement;
 
 const now = new Date();
 const year = now.getFullYear();
