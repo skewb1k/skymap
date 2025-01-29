@@ -107,7 +107,6 @@ export class SkyMap {
 		canvas.width = this.radius * 2;
 		canvas.height = this.radius * 2;
 		this.container.appendChild(canvas);
-
 		this.canvas = canvas;
 		this.ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
@@ -253,6 +252,18 @@ export class SkyMap {
 		this.ctx.lineTo(p.x, p.y);
 	}
 
+	private arcCircle(coo: Coo, radius: number): void {
+		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
+	}
+
+	private drawDisk(coo: Coo, radius: number, color: string | CanvasGradient): void {
+		this.ctx.beginPath();
+		this.ctx.fillStyle = color;
+		this.arcCircle(coo, radius);
+		this.ctx.fill();
+		this.ctx.closePath();
+	}
+
 	private drawConstellationsBorders(): void {
 		this.ctx.strokeStyle = this.colorConfig.constellationBordersColor;
 		this.ctx.lineWidth = this.linesConfig.constellationBordersWidth * this.scaleMod;
@@ -280,18 +291,6 @@ export class SkyMap {
 			}
 			this.ctx.stroke();
 		});
-	}
-
-	private arcCircle(coo: Coo, radius: number): void {
-		this.ctx.arc(coo.x, coo.y, radius, 0, Math.PI * 2);
-	}
-
-	private drawDisk(coo: Coo, radius: number, color: string | CanvasGradient): void {
-		this.ctx.beginPath();
-		this.ctx.fillStyle = color;
-		this.arcCircle(coo, radius);
-		this.ctx.fill();
-		this.ctx.closePath();
 	}
 
 	private drawBg(): void {
