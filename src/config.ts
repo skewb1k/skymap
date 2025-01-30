@@ -16,7 +16,7 @@ export type Config = {
 			color: string;
 			width: number;
 		};
-		borders: {
+		boundaries: {
 			enabled: boolean;
 			color: string;
 			width: number;
@@ -61,7 +61,7 @@ export const defaultConfig: Config = {
 			color: "#eaeaea",
 			width: 2,
 		},
-		borders: {
+		boundaries: {
 			enabled: false,
 			color: "#aaa",
 			width: 1,

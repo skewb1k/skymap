@@ -14,7 +14,7 @@ const randomTime = document.querySelector("#random-time") as HTMLInputElement;
 const gridCheckbox = document.querySelector("#grid") as HTMLInputElement;
 const starsCheckbox = document.querySelector("#stars") as HTMLInputElement;
 const constellationsLinesCheckbox = document.querySelector("#constellations-lines") as HTMLInputElement;
-const constellationsBordersCheckbox = document.querySelector("#constellations-borders") as HTMLInputElement;
+const constellationsBoundariesCheckbox = document.querySelector("#constellations-boundaries") as HTMLInputElement;
 
 const now = new Date();
 const year = now.getFullYear();
@@ -42,18 +42,6 @@ const sm = new SkyMap(
 				color: "#64C8FF66",
 			},
 		},
-		// colorConfig: {
-		// 	bgColor: "#0a0d13",
-		// 	gridColor: "#555",
-		// 	starColor: "#fefefe",
-		// 	starsTemperature: false,
-		// 	constellationLinesColor: "#64C8FF66",
-		// 	constellationBordersColor: "#aaa",
-		// },
-		// glow: true,
-		// constellationBordersColor: "#f00",
-		// gridColor: "#f00",
-		// constellationLinesColor: "#f00",
 	},
 );
 
@@ -74,6 +62,7 @@ randomTime.onclick = () => {
 		Math.random() * (new Date(year + 1, 1, 1).getTime() - new Date(year, 1, 1).getTime()) +
 			new Date(year, 1, 1).getTime(),
 	);
+	dateInput.value = date.toISOString().slice(0, 16);
 	sm.setDatetime(date);
 	// sm.animateDate(date, 10000, (date) => {
 	// 	dateInput.value = date.toISOString().slice(0, 16);
@@ -92,8 +81,8 @@ constellationsLinesCheckbox.addEventListener("change", () => {
 	sm.setShowConstellationsLines(constellationsLinesCheckbox.checked);
 });
 
-constellationsBordersCheckbox.addEventListener("change", () => {
-	sm.setShowConstellationsBorders(constellationsBordersCheckbox.checked);
+constellationsBoundariesCheckbox.addEventListener("change", () => {
+	sm.setShowConstellationsBoundaries(constellationsBoundariesCheckbox.checked);
 });
 
 fovRange.addEventListener("input", () => {

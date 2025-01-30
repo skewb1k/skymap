@@ -1,5 +1,5 @@
 import { Body, Equator, Observer } from "astronomy-engine";
-import constellationsBordersData from "../data/constellations.borders.json";
+import constellationsBoundariesData from "../data/constellations.boundaries.json";
 import constellationsLinesData from "../data/constellations.lines.json";
 import planets from "../data/planets.json";
 import starsData from "../data/stars.6.json";
@@ -11,7 +11,7 @@ import { arcCircle, lineTo, moveTo } from "./helper/canvas";
 import { bvToRGB } from "./helper/color";
 import equatorialToHorizontal from "./helper/equatorialToHorizontal";
 import projectSphericalTo2D from "./helper/projectSphericalTo2D";
-import type ConstellationBorder from "./types/ConstellationBorder.type";
+import type ConstellationBoundary from "./types/ConstellationBoundary.type";
 import type ConstellationLine from "./types/ConstellationLine.type";
 import type Coo from "./types/Coo.type";
 import type Planet from "./types/Planet.type";
@@ -52,7 +52,7 @@ export class SkyMap {
 	private stars: StarsData;
 	private planets: Planet[];
 	private constellationsLines: ConstellationLine[];
-	private constellationsBorders: ConstellationBorder[];
+	private constellationsBoundaries: ConstellationBoundary[];
 
 	constructor(
 		container: HTMLDivElement,
@@ -71,9 +71,9 @@ export class SkyMap {
 				...config.grid,
 			},
 			constellations: {
-				borders: {
-					...defaultConfig.constellations.borders,
-					...config.constellations?.borders,
+				boundaries: {
+					...defaultConfig.constellations.boundaries,
+					...config.constellations?.boundaries,
 				},
 				lines: {
 					...defaultConfig.constellations.lines,
@@ -124,7 +124,7 @@ export class SkyMap {
 			vertices: constellation.vertices.map((group) => group.map((pair) => pair as [number, number])),
 		}));
 
-		this.constellationsBorders = constellationsBordersData.map((constellation) => ({
+		this.constellationsBoundaries = constellationsBoundariesData.map((constellation) => ({
 			...constellation,
 			vertices: constellation.vertices.map((group) => group.map((pair) => pair as [number, number])),
 		}));
@@ -153,7 +153,7 @@ export class SkyMap {
 
 		if (this.config.grid.enabled) this.drawGrid();
 		if (this.config.constellations.lines.enabled) this.drawConstellationsLines();
-		if (this.config.constellations.borders.enabled) this.drawConstellationsBorders();
+		if (this.config.constellations.boundaries.enabled) this.drawConstellationsBoundaries();
 		if (this.config.stars.enabled) this.drawStars();
 		if (this.config.planets.enabled) this.drawPlanets();
 		if (this.config.sun.enabled) this.drawSun();
@@ -294,8 +294,8 @@ export class SkyMap {
 		return this;
 	}
 
-	public setShowConstellationsBorders(value: boolean): this {
-		this.config.constellations.borders.enabled = value;
+	public setShowConstellationsBoundaries(value: boolean): this {
+		this.config.constellations.boundaries.enabled = value;
 		this.render();
 		return this;
 	}
@@ -364,15 +364,15 @@ export class SkyMap {
 		});
 	}
 
-	private drawConstellationsBorders(): void {
-		this.ctx.strokeStyle = this.config.constellations.borders.color;
-		this.ctx.lineWidth = this.config.constellations.borders.width * this.scaleMod;
+	private drawConstellationsBoundaries(): void {
+		this.ctx.strokeStyle = this.config.constellations.boundaries.color;
+		this.ctx.lineWidth = this.config.constellations.boundaries.width * this.scaleMod;
 		if (this.config.glow) {
 			this.ctx.shadowBlur = 5;
-			this.ctx.shadowColor = this.config.constellations.borders.color;
+			this.ctx.shadowColor = this.config.constellations.boundaries.color;
 		}
 
-		this.constellationsBorders.forEach((constellation) => {
+		this.constellationsBoundaries.forEach((constellation) => {
 			this.ctx.beginPath();
 			for (const group of constellation.vertices) {
 				for (let j = 0; j < group.length; j++) {
