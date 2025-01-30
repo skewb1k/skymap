@@ -1,23 +1,23 @@
 import { Body, Equator, Observer } from "astronomy-engine";
 import constellationsBoundariesData from "../data/constellations.boundaries.json";
-import constellationsLinesData from "../data/constellations.lines.json";
 import constellationsLabelsData from "../data/constellations.labels.json";
+import constellationsLinesData from "../data/constellations.lines.json";
 import planets from "../data/planets.json";
 import starsData from "../data/stars.6.json";
 import Angle from "./Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
 import { type Config, defaultConfig, mergeConfigs } from "./config";
-import type DeepPartial from "./helper/DeepPartial";
-import { arcCircle, lineTo, moveTo } from "./helper/canvas";
-import { bvToRGB } from "./helper/color";
-import equatorialToHorizontal from "./helper/equatorialToHorizontal";
-import projectSphericalTo2D from "./helper/projectSphericalTo2D";
+import type DeepPartial from "./helpers/DeepPartial";
+import { arcCircle, lineTo, moveTo } from "./helpers/canvas";
+import { bvToRGB } from "./helpers/color";
+import equatorialToHorizontal from "./helpers/equatorialToHorizontal";
+import projectSphericalTo2D from "./helpers/projectSphericalTo2D";
 import type ConstellationBoundary from "./types/ConstellationBoundary.type";
+import type ConstellationLabel from "./types/ConstellationLabel.type";
 import type ConstellationLine from "./types/ConstellationLine.type";
 import type Coo from "./types/Coo.type";
 import type Planet from "./types/Planet.type";
 import type StarsData from "./types/StarsData.type";
-import type ConstellationLabel from "./types/ConstellationLabel.type";
 
 type Options = {
 	latitude: number;

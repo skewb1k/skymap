@@ -1,4 +1,4 @@
-import type DeepPartial from "./helper/DeepPartial";
+import type DeepPartial from "./helpers/DeepPartial";
 
 export type Config = {
 	stars: {
