@@ -119,17 +119,59 @@ export class SkyMap {
 		const opts = { ...defaultOptions, ...options };
 		this.fontFamily = "Arial";
 
+		const canvas = document.createElement("canvas");
+
 		this.radius = Math.min(this.container.offsetWidth, this.container.offsetHeight) / 2;
 		this.center = { x: this.radius, y: this.radius };
-
-		const canvas = document.createElement("canvas");
+		this.scaleMod = this.radius / 400;
 		canvas.width = this.radius * 2;
 		canvas.height = this.radius * 2;
-		this.container.appendChild(canvas);
-		this.canvas = canvas;
-		this.ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+		canvas.style = `
+			width: 100%;
+			height: 100%;
+			display: block;
+		`;
 
-		this.scaleMod = this.radius / 400;
+		const resizeObserver = new ResizeObserver(() => {
+			resizeCanvas();
+		});
+
+		resizeObserver.observe(container);
+
+		const resizeCanvas = () => {
+			const dpr = window.devicePixelRatio || 1;
+
+			// Get actual size of the div
+			const width = container.clientWidth;
+			const height = container.clientHeight;
+
+			// Set canvas size to match container, but with high resolution
+			canvas.width = width * dpr;
+			canvas.height = height * dpr;
+			console.log(width * dpr);
+
+			this.radius = Math.min(width, height) / 2;
+			this.center = { x: this.radius, y: this.radius };
+			this.scaleMod = this.radius / 400;
+
+			// Scale context to avoid blurry graphics
+			this.ctx.scale(dpr, dpr);
+			this.render();
+		};
+
+		this.canvas = canvas;
+		this.container.appendChild(canvas);
+
+		this.ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+		// const scaleFactor = 2; // Increase resolution manually
+
+		// canvas.width = this.radius * 2 * scaleFactor;
+		// canvas.height = this.radius * 2 * scaleFactor;
+
+		// canvas.style.width = `${this.radius * 2}px`;
+		// canvas.style.height = `${this.radius * 2}px`;
+
+		// this.ctx.scale(scaleFactor, scaleFactor);
 
 		this.latitude = Angle.fromDegrees(opts.latitude);
 		this.longitude = Angle.fromDegrees(opts.longitude);
@@ -156,7 +198,7 @@ export class SkyMap {
 			this.constellationsLabels.set(key, { ...value, coords: [value.coords[0], value.coords[1]] });
 		}
 
-		this.render();
+		// this.render();
 	}
 	private cut() {
 		this.ctx.beginPath();
@@ -534,7 +576,7 @@ export class SkyMap {
 
 	private drawBg(): void {
 		this.ctx.fillStyle = this.config.bgColor;
-		this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+		this.ctx.fillRect(0, 0, this.radius * 2, this.radius * 2);
 		// this.drawDisk({ x: this.radius, y: this.radius }, this.radius * 1.5, this.config.bgColor);
 	}
 
