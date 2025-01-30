@@ -4,7 +4,7 @@ enum AngleUnit {
 	Hours = 2,
 }
 
-export class Angle {
+export default class Angle {
 	private readonly _radians: number;
 
 	private degrees_cache: number | undefined;

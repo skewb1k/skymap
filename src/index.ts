@@ -3,8 +3,10 @@ import constellationsBordersData from "../data/constellations.borders.json";
 import constellationsLinesData from "../data/constellations.lines.json";
 import planets from "../data/planets.json";
 import starsData from "../data/stars.6.json";
-import { Angle } from "./Angle";
+import Angle from "./Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
+import { type Config, defaultConfig } from "./config";
+import type DeepPartial from "./helper/DeepPartial";
 import { arcCircle, lineTo, moveTo } from "./helper/canvas";
 import { bvToRGB } from "./helper/color";
 import equatorialToHorizontal from "./helper/equatorialToHorizontal";
@@ -15,113 +17,11 @@ import type Coo from "./types/Coo.type";
 import type Planet from "./types/Planet.type";
 import type StarsData from "./types/StarsData.type";
 
-type StarsConfig = {
-	enabled: boolean;
-	color: string;
-	size: number;
-	monochrome: boolean;
-};
-
-type GridConfig = {
-	enabled: boolean;
-	color: string;
-	width: number;
-};
-
-type ConstellationsBoundariesConfig = {
-	enabled: boolean;
-	color: string;
-	width: number;
-};
-
-type ConstellationsLinesConfig = {
-	enabled: boolean;
-	color: string;
-	width: number;
-};
-
-type ConstellationsConfig = {
-	lines: ConstellationsLinesConfig;
-	borders: ConstellationsBoundariesConfig;
-};
-
-type PlanetsConfig = {
-	enabled: boolean;
-	size: number;
-	monochrome: boolean;
-};
-
-type MoonConfig = {
-	enabled: boolean;
-	size: number;
-	monochrome: boolean;
-};
-
-type SunConfig = {
-	enabled: boolean;
-	size: number;
-	monochrome: boolean;
-};
-
-type Config = {
-	stars: StarsConfig;
-	grid: GridConfig;
-	constellations: ConstellationsConfig;
-	planets: PlanetsConfig;
-	sun: SunConfig;
-	moon: MoonConfig;
-	bgColor: string;
-	glow: boolean;
-};
-
 type SkyMapOptions = {
 	latitude: number;
 	longitude: number;
 	datetime: Date;
 	fov: number;
-};
-
-const defaultConfig: Config = {
-	bgColor: "#000000",
-	glow: false,
-	stars: {
-		enabled: true,
-		color: "#fefefe",
-		size: 1,
-		monochrome: true,
-	},
-	grid: {
-		enabled: true,
-		color: "#555",
-		width: 1,
-	},
-	constellations: {
-		lines: {
-			enabled: true,
-			color: "#eaeaea",
-			width: 2,
-		},
-		borders: {
-			enabled: true,
-			color: "#aaa",
-			width: 1,
-		},
-	},
-	moon: {
-		enabled: true,
-		size: 1,
-		monochrome: false,
-	},
-	sun: {
-		enabled: true,
-		size: 1,
-		monochrome: false,
-	},
-	planets: {
-		enabled: true,
-		size: 1,
-		monochrome: false,
-	},
 };
 
 const defaultOptions = {
@@ -157,10 +57,44 @@ export class SkyMap {
 	constructor(
 		container: HTMLDivElement,
 		options: Partial<SkyMapOptions> = defaultOptions,
-		config: Partial<Config> = defaultConfig,
+		config: DeepPartial<Config> = defaultConfig,
 	) {
 		this.container = container;
-		this.config = { ...defaultConfig, ...config };
+		this.config = {
+			...defaultConfig,
+			stars: {
+				...defaultConfig.stars,
+				...config.stars,
+			},
+			grid: {
+				...defaultConfig.grid,
+				...config.grid,
+			},
+			constellations: {
+				borders: {
+					...defaultConfig.constellations.borders,
+					...config.constellations?.borders,
+				},
+				lines: {
+					...defaultConfig.constellations.lines,
+					...config.constellations?.lines,
+				},
+			},
+			planets: {
+				...defaultConfig.planets,
+				...config.planets,
+			},
+			sun: {
+				...defaultConfig.sun,
+				...config.sun,
+			},
+			moon: {
+				...defaultConfig.moon,
+				...config.moon,
+			},
+			bgColor: config.bgColor || defaultConfig.bgColor,
+			glow: config.glow || defaultConfig.glow,
+		};
 		const opts = { ...defaultOptions, ...options };
 
 		this.radius = Math.min(this.container.offsetWidth, this.container.offsetHeight) / 2;
@@ -197,7 +131,6 @@ export class SkyMap {
 
 		this.render();
 	}
-
 	private cut() {
 		this.ctx.beginPath();
 		arcCircle(this.ctx, this.center, this.radius);

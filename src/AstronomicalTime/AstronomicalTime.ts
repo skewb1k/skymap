@@ -1,4 +1,4 @@
-import { Angle } from "../Angle";
+import Angle from "../Angle/Angle";
 
 export default class AstronomicalTime {
 	private readonly date: Date;
