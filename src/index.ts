@@ -1,17 +1,20 @@
 import { Body, Equator, Observer } from "astronomy-engine";
 import constellationsBordersData from "../data/constellations.borders.json";
 import constellationsLinesData from "../data/constellations.lines.json";
+import planets from "../data/planets.json";
 import starsData from "../data/stars.6.json";
 import { Angle } from "./Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
 import { bvToRGB } from "./helper/color";
 import equatorialToHorizontal from "./helper/equatorialToHorizontal";
-import type { ConstellationBorder, ConstellationLine } from "./types/Constellation.type";
-import type { Coo } from "./types/Coo.type";
-import type { Star } from "./types/Star.type";
-import type { StarsData } from "./types/StarsData.type";
+import type ConstellationBorder from "./types/ConstellationBorder.type";
+import type ConstellationLine from "./types/ConstellationLine.type";
+import type Coo from "./types/Coo.type";
+import type Star from "./types/Star.type";
+import type StarsData from "./types/StarsData.type";
 import { arcCircle, moveTo, lineTo } from "./helper/canvas";
 import projectSphericalTo2D from "./helper/projectSphericalTo2D";
+import type Planet from "./types/Planet.type";
 
 type ColorConfig = {
 	gridColor: string;
@@ -72,6 +75,7 @@ export class SkyMap {
 	private linesConfig: LinesConfig;
 
 	private stars: StarsData;
+	private planets: Planet[];
 	private constellationsLines: ConstellationLine[];
 	private constellationsBorders: ConstellationBorder[];
 
@@ -135,6 +139,7 @@ export class SkyMap {
 		this.observer = this.getObserver();
 
 		this.stars = starsData;
+		this.planets = planets;
 		this.constellationsLines = constellationsLinesData.map((constellation) => ({
 			...constellation,
 			vertices: constellation.vertices.map((group) => group.map((pair) => pair as [number, number])),
@@ -172,8 +177,8 @@ export class SkyMap {
 		if (this.showConstellationsBorders) this.drawConstellationsBorders();
 		if (this.showStars) this.drawStars();
 		if (this.showPlanets) this.drawPlanets();
-		this.drawMoon();
 		this.drawSun();
+		this.drawMoon();
 		this.drawBorder();
 		// console.log(performance.now() - now);
 	}
@@ -187,11 +192,14 @@ export class SkyMap {
 	}
 
 	private animationFrameId: number | null = null;
-	public animateLocation(
-		latitude: number,
-		longitude: number,
+
+	private animate<T>(
+		startValue: T,
+		targetValue: T,
 		duration: number,
-		callback: (latitude: number, longitude: number) => void,
+		callback: (value: T) => void,
+		update: (value: T) => void,
+		lerp: (start: T, end: T, progress: number) => T,
 	): this {
 		// Cancel the previous animation if it exists
 		if (this.animationFrameId) {
@@ -200,27 +208,15 @@ export class SkyMap {
 
 		const startTime = performance.now();
 
-		const startingLat = this.latitude.degrees;
-		const startingLon = this.longitude.degrees;
-
 		const step = (currentTime: number) => {
 			const elapsed = currentTime - startTime;
 			const progress = Math.min(elapsed / duration, 1); // Normalize to [0,1]
-
-			// Apply easing (ease-in-out for smooth start and end)
 			const easedProgress = this.easeProgress(progress);
+			const newValue = lerp(startValue, targetValue, easedProgress);
 
-			const newLat = this.lerp(startingLat, latitude, easedProgress);
-
-			const newLon = this.lerp(startingLon, longitude, easedProgress);
-
-			// Update the canvas rendering
-			this.latitude = Angle.fromDegrees(newLat);
-			this.longitude = Angle.fromDegrees(newLon);
-			this.observer = this.getObserver();
-			this.updateLST();
-			this.render();
-			callback(newLat, newLon);
+			// Update the value and render
+			update(newValue);
+			callback(newValue);
 
 			// Continue animation if not finished
 			if (progress < 1) {
@@ -234,41 +230,54 @@ export class SkyMap {
 		return this;
 	}
 
+	public animateLocation(
+		latitude: number,
+		longitude: number,
+		duration: number,
+		callback: (latitude: number, longitude: number) => void,
+	): this {
+		const startLat = this.latitude.degrees;
+		const startLon = this.longitude.degrees;
+
+		return this.animate<[number, number]>(
+			[startLat, startLon],
+			[latitude, longitude],
+			duration,
+			([newLat, newLon]) => {
+				this.latitude = Angle.fromDegrees(newLat);
+				this.longitude = Angle.fromDegrees(newLon);
+				this.observer = this.getObserver();
+				this.updateLST();
+				this.render();
+				callback(newLat, newLon);
+			},
+			([newLat, newLon]) => {
+				this.latitude = Angle.fromDegrees(newLat);
+				this.longitude = Angle.fromDegrees(newLon);
+			},
+			(start, end, progress) => [this.lerp(start[0], end[0], progress), this.lerp(start[1], end[1], progress)],
+		);
+	}
+
 	public animateDate(date: Date, duration: number, callback: (date: Date) => void): this {
-		// Cancel the previous animation if it exists
-		if (this.animationFrameId) {
-			cancelAnimationFrame(this.animationFrameId);
-		}
-
-		const startTime = performance.now();
-
-		const startingTime = this.datetime.UTCDate.getTime();
+		const startTime = this.datetime.UTCDate.getTime();
 		const targetTime = date.getTime();
 
-		const step = (currentTime: number) => {
-			const elapsed = currentTime - startTime;
-			const progress = Math.min(elapsed / duration, 1); // Normalize to [0,1]
-
-			// Apply easing (ease-in-out for smooth start and end)
-			const easedProgress = this.easeProgress(progress);
-			const newTime = new Date(this.lerp(startingTime, targetTime, easedProgress));
-
-			// Update the canvas rendering
-			this.datetime = AstronomicalTime.fromUTCDate(newTime);
-			this.updateLST();
-			this.render();
-			callback(newTime);
-
-			// Continue animation if not finished
-			if (progress < 1) {
-				this.animationFrameId = requestAnimationFrame(step);
-			} else {
-				this.animationFrameId = null; // Clear the animation frame ID when finished
-			}
-		};
-
-		this.animationFrameId = requestAnimationFrame(step);
-		return this;
+		return this.animate<number>(
+			startTime,
+			targetTime,
+			duration,
+			(newTime) => {
+				this.datetime = AstronomicalTime.fromUTCDate(new Date(newTime));
+				this.updateLST();
+				this.render();
+				callback(new Date(newTime));
+			},
+			(newTime) => {
+				this.datetime = AstronomicalTime.fromUTCDate(new Date(newTime));
+			},
+			(start, end, progress) => this.lerp(start, end, progress),
+		);
 	}
 
 	public setLatitude(latitude: number): this {
@@ -409,45 +418,9 @@ export class SkyMap {
 	}
 
 	private drawPlanets(): void {
-		const planets = [
-			{
-				name: Body.Mercury,
-				radius: 2,
-				color: "#b0b0b0",
-			},
-			{
-				name: Body.Venus,
-				radius: 5,
-				color: "#ffffe0",
-			},
-			{
-				name: Body.Mars,
-				radius: 3,
-				color: "#ff4500",
-			},
-			{
-				name: Body.Jupiter,
-				radius: 6,
-				color: "#e3a869",
-			},
-			{
-				name: Body.Saturn,
-				radius: 5.5,
-				color: "#ffcc99",
-			},
-			{
-				name: Body.Uranus,
-				radius: 1.5,
-				color: "#66ccff",
-			},
-			{
-				name: Body.Neptune,
-				radius: 1,
-				color: "#3366cc",
-			},
-		];
-		for (const planet of planets) {
-			const equatorial = Equator(planet.name, this.datetime.UTCDate, this.observer, true, true);
+		for (const planet of this.planets) {
+			const body = Body[planet.name as keyof typeof Body];
+			const equatorial = Equator(body, this.datetime.UTCDate, this.observer, true, true);
 
 			const ra = Angle.fromHours(equatorial.ra);
 			const dec = Angle.fromDegrees(equatorial.dec);
@@ -464,7 +437,6 @@ export class SkyMap {
 			this.drawDisk(coo, (planet.radius * this.scaleMod) / this.fovFactor, planet.color);
 		}
 	}
-
 	private drawMoon(): void {
 		const equatorial = Equator(Body.Moon, this.datetime.UTCDate, this.observer, true, true);
 
@@ -498,7 +470,7 @@ export class SkyMap {
 			this.ctx.shadowBlur = 10;
 			this.ctx.shadowColor = color;
 		}
-		this.drawDisk(coo, (12 * this.scaleMod) / this.fovFactor, color);
+		this.drawDisk(coo, (10 * this.scaleMod) / this.fovFactor, color);
 	}
 
 	private drawBg(): void {

@@ -1,6 +1,6 @@
-import type { Star } from "./Star.type";
+import type Star from "./Star.type";
 
-export type StarsData = {
+type StarsData = {
 	mag: {
 		min: number;
 		max: number;
@@ -12,3 +12,5 @@ export type StarsData = {
 	total: number;
 	stars: Star[];
 };
+
+export default StarsData;
