@@ -1,7 +1,7 @@
 type ConstellationLine = {
 	id: string;
 	rank: number;
-	vertices: [number, number][][];
+	coo: number[][][];
 };
 
 export default ConstellationLine;

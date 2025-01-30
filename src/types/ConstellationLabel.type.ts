@@ -1,5 +1,5 @@
 type ConstellationLabel = {
-	coords: [number, number];
+	coo: number[];
 	labels: {
 		en: string;
 		la: string;

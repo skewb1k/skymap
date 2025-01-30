@@ -116,19 +116,12 @@ export class SkyMap {
 
 		this.stars = starsData;
 		this.planets = planets;
-		this.constellationsLines = constellationsLinesData.map((constellation) => ({
-			...constellation,
-			vertices: constellation.vertices.map((group) => group.map((pair) => pair as [number, number])),
-		}));
+		this.constellationsLines = constellationsLinesData;
+		this.constellationsBoundaries = constellationsBoundariesData;
 
-		this.constellationsBoundaries = constellationsBoundariesData.map((constellation) => ({
-			...constellation,
-			vertices: constellation.vertices.map((group) => group.map((pair) => pair as [number, number])),
-		}));
 		this.constellationsLabels = new Map();
-
 		for (const [key, value] of Object.entries(constellationsLabelsData)) {
-			this.constellationsLabels.set(key, { ...value, coords: [value.coords[0], value.coords[1]] });
+			this.constellationsLabels.set(key, value);
 		}
 	}
 
@@ -343,7 +336,7 @@ export class SkyMap {
 
 		this.constellationsLines.forEach((constellation) => {
 			this.ctx.beginPath();
-			for (const group of constellation.vertices) {
+			for (const group of constellation.coo) {
 				for (let j = 0; j < group.length; j++) {
 					const [raDeg, decDeg] = group[j];
 					const ra = Angle.fromDegrees(raDeg);
@@ -369,7 +362,7 @@ export class SkyMap {
 				const text = constellationsLabel.labels.la;
 				const textWidth = this.ctx.measureText(text).width;
 
-				const [raDeg, decDeg] = constellationsLabel.coords;
+				const [raDeg, decDeg] = constellationsLabel.coo;
 				const ra = Angle.fromDegrees(raDeg);
 				const dec = Angle.fromDegrees(decDeg);
 
@@ -393,7 +386,7 @@ export class SkyMap {
 
 		this.constellationsBoundaries.forEach((constellation) => {
 			this.ctx.beginPath();
-			for (const group of constellation.vertices) {
+			for (const group of constellation.coo) {
 				for (let j = 0; j < group.length; j++) {
 					const [raDeg, decDeg] = group[j];
 					const ra = Angle.fromDegrees(raDeg);

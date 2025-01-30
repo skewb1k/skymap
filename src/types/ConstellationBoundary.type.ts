@@ -1,6 +1,6 @@
 type ConstellationBoundary = {
 	ids: string[];
-	vertices: [number, number][][];
+	coo: number[][][];
 };
 
 export default ConstellationBoundary;
