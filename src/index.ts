@@ -178,6 +178,99 @@ export class SkyMap {
 		// console.log(performance.now() - now);
 	}
 
+	private lerp(start: number, end: number, t: number): number {
+		return start + (end - start) * t;
+	}
+
+	private easeProgress(progress: number): number {
+		return progress < 0.5 ? 2 * progress ** 2 : 1 - (-2 * progress + 2) ** 2 / 2;
+	}
+
+	private animationFrameId: number | null = null;
+	public animateLocation(
+		latitude: number,
+		longitude: number,
+		duration: number,
+		callback: (latitude: number, longitude: number) => void,
+	): this {
+		// Cancel the previous animation if it exists
+		if (this.animationFrameId) {
+			cancelAnimationFrame(this.animationFrameId);
+		}
+
+		const startTime = performance.now();
+
+		const startingLat = this.latitude.degrees;
+		const startingLon = this.longitude.degrees;
+
+		const step = (currentTime: number) => {
+			const elapsed = currentTime - startTime;
+			const progress = Math.min(elapsed / duration, 1); // Normalize to [0,1]
+
+			// Apply easing (ease-in-out for smooth start and end)
+			const easedProgress = this.easeProgress(progress);
+
+			const newLat = this.lerp(startingLat, latitude, easedProgress);
+
+			const newLon = this.lerp(startingLon, longitude, easedProgress);
+
+			// Update the canvas rendering
+			this.latitude = Angle.fromDegrees(newLat);
+			this.longitude = Angle.fromDegrees(newLon);
+			this.observer = this.getObserver();
+			this.updateLST();
+			this.render();
+			callback(newLat, newLon);
+
+			// Continue animation if not finished
+			if (progress < 1) {
+				this.animationFrameId = requestAnimationFrame(step);
+			} else {
+				this.animationFrameId = null; // Clear the animation frame ID when finished
+			}
+		};
+
+		this.animationFrameId = requestAnimationFrame(step);
+		return this;
+	}
+
+	public animateDate(date: Date, duration: number, callback: (date: Date) => void): this {
+		// Cancel the previous animation if it exists
+		if (this.animationFrameId) {
+			cancelAnimationFrame(this.animationFrameId);
+		}
+
+		const startTime = performance.now();
+
+		const startingTime = this.datetime.UTCDate.getTime();
+		const targetTime = date.getTime();
+
+		const step = (currentTime: number) => {
+			const elapsed = currentTime - startTime;
+			const progress = Math.min(elapsed / duration, 1); // Normalize to [0,1]
+
+			// Apply easing (ease-in-out for smooth start and end)
+			const easedProgress = this.easeProgress(progress);
+			const newTime = new Date(this.lerp(startingTime, targetTime, easedProgress));
+
+			// Update the canvas rendering
+			this.datetime = AstronomicalTime.fromUTCDate(newTime);
+			this.updateLST();
+			this.render();
+			callback(newTime);
+
+			// Continue animation if not finished
+			if (progress < 1) {
+				this.animationFrameId = requestAnimationFrame(step);
+			} else {
+				this.animationFrameId = null; // Clear the animation frame ID when finished
+			}
+		};
+
+		this.animationFrameId = requestAnimationFrame(step);
+		return this;
+	}
+
 	public setLatitude(latitude: number): this {
 		this.latitude = Angle.fromDegrees(latitude);
 		this.observer = this.getObserver();

@@ -12,60 +12,66 @@
   class="flex items-center justify-center min-h-screen w-full bg-gradient-to-b from-[#0d0d1a] to-[#1a1a2e] text-white font-sans px-6">
   <div class="w-full max-w-[850px] flex flex-col items-center flex-grow justify-center space-y-8">
     <div id="container" class="aspect-square w-full flex items-center justify-center"></div>
-
     <div
-      class="p-6 w-full max-w-[700px] bg-[#161627] border border-blue-500/30 shadow-[0_0_15px_rgba(0,0,255,0.2)] rounded-2xl">
-      <form class="grid grid-cols-2 gap-6">
-        <div class="flex flex-col">
-          <label for="fov-range" class="text-xl font-semibold text-blue-300 drop-shadow-lg">FOV</label>
-          <input type="number" id="fov-input"
-            class="p-3 rounded bg-[#1c1c3c] text-blue-200 border border-blue-500/40 shadow-md" value="180" min="0"
-            max="180">
-          <input type="range" id="fov-range" class="mt-2 w-full accent-blue-400" min="0" max="180" value="180">
-        </div>
+      class="p-6 w-full grid grid-cols-2 gap-6 max-w-[700px] bg-[#161627] border border-blue-500/30 shadow-[0_0_15px_rgba(0,0,255,0.2)] rounded-2xl">
+      <div class="select-none flex items-center space-x-3">
+        <input type="checkbox" id="grid" checked class="w-6 h-6 text-blue-400 accent-blue-400">
+        <label for="grid" class="text-lg font-semibold text-blue-300">Grid</label>
+      </div>
 
-        <div class="flex flex-col">
-          <label for="latitude-range" class="text-xl font-semibold text-blue-300 drop-shadow-lg">Latitude</label>
-          <input type="number" id="latitude-input"
-            class="p-3 rounded bg-[#1c1c3c] text-blue-200 border border-blue-500/40 shadow-md" value="0" min="-90"
-            max="90">
-          <input type="range" id="latitude-range" class="mt-2 w-full accent-blue-400" step="0.1" min="-90" max="90">
-        </div>
+      <div class="select-none flex items-center space-x-3">
+        <input type="checkbox" id="stars" checked class="w-6 h-6 text-blue-400 accent-blue-400">
+        <label for="stars" class="text-lg font-semibold text-blue-300">Stars</label>
+      </div>
 
-        <div class="flex flex-col">
-          <label for="longitude-range" class="text-xl font-semibold text-blue-300 drop-shadow-lg">Longitude</label>
-          <input type="number" id="longitude-input"
-            class="p-3 rounded bg-[#1c1c3c] text-blue-200 border border-blue-500/40 shadow-md" value="0" min="-180"
-            max="180">
-          <input type="range" id="longitude-range" class="mt-2 w-full accent-blue-400" step="0.1" min="-180" max="180">
-        </div>
+      <div class="select-none flex items-center space-x-3">
+        <input type="checkbox" id="constellations-lines" checked class="w-6 h-6 text-blue-400 accent-blue-400">
+        <label for="constellations-lines" class="text-lg font-semibold text-blue-300">Constellation Lines</label>
+      </div>
 
-        <div class="flex flex-col">
-          <label for="datetime" class="text-xl font-semibold text-blue-300 drop-shadow-lg">Datetime</label>
-          <input type="datetime-local" id="datetime"
-            class="p-3 rounded bg-[#1c1c3c] text-blue-200 border border-blue-500/40 shadow-md">
-        </div>
+      <div class="select-none flex items-center space-x-3">
+        <input type="checkbox" id="constellations-borders" class="w-6 h-6 text-blue-400 accent-blue-400">
+        <label for="constellations-borders" class="text-lg font-semibold text-blue-300">Constellation Borders</label>
+      </div>
 
-        <div class="select-none flex items-center space-x-3">
-          <input type="checkbox" id="grid" checked class="w-6 h-6 text-blue-400 accent-blue-400">
-          <label for="grid" class="text-lg font-semibold text-blue-300">Grid</label>
-        </div>
+      <div class="flex flex-col">
+        <label for="latitude-range" class="text-xl font-semibold text-blue-300 drop-shadow-lg">Latitude</label>
+        <input type="number" id="latitude-input"
+          class="p-3 rounded bg-[#1c1c3c] text-blue-200 border border-blue-500/40 shadow-md" value="0" min="-90"
+          max="90">
+        <input type="range" id="latitude-range" class="mt-2 w-full accent-blue-400" step="0.1" min="-90" max="90">
+      </div>
 
-        <div class="select-none flex items-center space-x-3">
-          <input type="checkbox" id="stars" checked class="w-6 h-6 text-blue-400 accent-blue-400">
-          <label for="stars" class="text-lg font-semibold text-blue-300">Stars</label>
-        </div>
+      <div class="flex flex-col">
+        <label for="longitude-range" class="text-xl font-semibold text-blue-300 drop-shadow-lg">Longitude</label>
+        <input type="number" id="longitude-input"
+          class="p-3 rounded bg-[#1c1c3c] text-blue-200 border border-blue-500/40 shadow-md" value="0" min="-180"
+          max="180">
+        <input type="range" id="longitude-range" class="mt-2 w-full accent-blue-400" step="0.1" min="-180" max="180">
+      </div>
 
-        <div class="select-none flex items-center space-x-3">
-          <input type="checkbox" id="constellations-lines" checked class="w-6 h-6 text-blue-400 accent-blue-400">
-          <label for="constellations-lines" class="text-lg font-semibold text-blue-300">Constellation Lines</label>
-        </div>
+      <div class="flex flex-col">
+        <label for="fov-range" class="text-xl font-semibold text-blue-300 drop-shadow-lg">FOV</label>
+        <input type="number" id="fov-input"
+          class="p-3 rounded bg-[#1c1c3c] text-blue-200 border border-blue-500/40 shadow-md" value="180" min="0"
+          max="180">
+        <input type="range" id="fov-range" class="mt-2 w-full accent-blue-400" min="0" max="180" value="180">
+      </div>
 
-        <div class="select-none flex items-center space-x-3">
-          <input type="checkbox" id="constellations-borders" class="w-6 h-6 text-blue-400 accent-blue-400">
-          <label for="constellations-borders" class="text-lg font-semibold text-blue-300">Constellation Borders</label>
-        </div>
-      </form>
+      <div class="flex flex-col">
+        <label for="datetime" class="text-xl font-semibold text-blue-300 drop-shadow-lg">Datetime</label>
+        <input type="datetime-local" id="datetime"
+          class="p-3 rounded bg-[#1c1c3c] text-blue-200 border border-blue-500/40 shadow-md">
+      </div>
+
+      <div class="col-span-2 flex justify-between">
+        <button id="random-location"
+          class="p-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 font-semibold rounded-lg shadow-md transition-all">Random
+          Location</button>
+        <button id="random-time"
+          class="p-3 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 font-semibold rounded-lg shadow-md transition-all">Random
+          Time</button>
+      </div>
     </div>
   </div>
   <script type="module" src="index.ts"></script>

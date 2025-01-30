@@ -8,6 +8,9 @@ const fovRange = document.querySelector("#fov-range") as HTMLInputElement;
 const fovInput = document.querySelector("#fov-input") as HTMLInputElement;
 const dateInput = document.querySelector("#datetime") as HTMLInputElement;
 
+const randomLocation = document.querySelector("#random-location") as HTMLInputElement;
+const randomTime = document.querySelector("#random-time") as HTMLInputElement;
+
 const gridCheckbox = document.querySelector("#grid") as HTMLInputElement;
 const starsCheckbox = document.querySelector("#stars") as HTMLInputElement;
 const constellationsLinesCheckbox = document.querySelector("#constellations-lines") as HTMLInputElement;
@@ -29,17 +32,41 @@ const sm = new SkyMap(container, {
 	longitude: Number(lonInput.value),
 	datetime: new Date(dateInput.value),
 	colorConfig: {
-		// bgColor: "#0a0d13",
-		// gridColor: "#555",
-		// starColor: "#fefefe",
-		// starsTemperature: false,
-		// constellationLinesColor: "#64C8FF66",
-		// constellationBordersColor: "#aaa",
+		bgColor: "#0a0d13",
+		gridColor: "#555",
+		starColor: "#fefefe",
+		starsTemperature: false,
+		constellationLinesColor: "#64C8FF66",
+		constellationBordersColor: "#aaa",
 	},
+	// glow: true,
 	// constellationBordersColor: "#f00",
 	// gridColor: "#f00",
 	// constellationLinesColor: "#f00",
 });
+
+randomLocation.onclick = () => {
+	const lat = Math.random() * 180 - 90;
+	const lon = Math.random() * 360 - 180;
+	sm.animateLocation(lat, lon, 500, (lat, lon) => {
+		latInput.value = lat.toFixed(2);
+		latRange.value = lat.toFixed(2);
+		lonInput.value = lon.toFixed(2);
+		lonRange.value = lon.toFixed(2);
+	});
+};
+
+randomTime.onclick = () => {
+	// random date
+	const date = new Date(
+		Math.random() * (new Date(year + 1, 1, 1).getTime() - new Date(year, 1, 1).getTime()) +
+			new Date(year, 1, 1).getTime(),
+	);
+	sm.setDatetime(date);
+	// sm.animateDate(date, 10000, (date) => {
+	// 	dateInput.value = date.toISOString().slice(0, 16);
+	// });
+};
 
 gridCheckbox.addEventListener("change", () => {
 	sm.setShowGrid(gridCheckbox.checked);
@@ -88,7 +115,7 @@ lonRange.addEventListener("input", () => {
 });
 
 dateInput.addEventListener("input", () => {
-	sm.setDatetime(new Date(dateInput.value));
+	sm.animateDate(new Date(dateInput.value), 500, () => {});
 });
 
 // Get the DPR and size of the canvas
