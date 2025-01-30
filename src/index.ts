@@ -33,8 +33,6 @@ const defaultOptions = {
 	fov: 180,
 };
 
-const monochromeLabelColor = "#fefefe";
-
 export class SkyMap {
 	private container: HTMLDivElement;
 	private canvas: HTMLCanvasElement;
@@ -117,7 +115,6 @@ export class SkyMap {
 			},
 			bgColor: config.bgColor !== undefined ? config.bgColor : defaultConfig.bgColor,
 			glow: config.glow !== undefined ? config.glow : defaultConfig.glow,
-			monochrome: config.monochrome !== undefined ? config.monochrome : defaultConfig.monochrome,
 		};
 		const opts = { ...defaultOptions, ...options };
 		this.fontFamily = "Arial";
@@ -457,7 +454,7 @@ export class SkyMap {
 			const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
 			const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-			const color = this.config.monochrome ? monochromeLabelColor : planet.color;
+			const color = this.config.planets.color !== undefined ? this.config.planets.color : planet.color;
 
 			if (this.config.glow) {
 				this.ctx.shadowBlur = 10;
@@ -486,7 +483,7 @@ export class SkyMap {
 		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-		const color = this.config.monochrome ? monochromeLabelColor : this.config.moon.color;
+		const color = this.config.moon.color;
 		if (this.config.glow) {
 			this.ctx.shadowBlur = 10;
 			this.ctx.shadowColor = color;
@@ -499,7 +496,7 @@ export class SkyMap {
 
 		this.drawDisk(coo, rad, color);
 		if (this.config.planets.labels.enabled) {
-			this.ctx.fillStyle = this.config.monochrome ? monochromeLabelColor : this.config.moon.label.color;
+			this.ctx.fillStyle = this.config.moon.label.color;
 			this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
 		}
 	}
@@ -517,7 +514,7 @@ export class SkyMap {
 		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-		const color = this.config.monochrome ? monochromeLabelColor : this.config.sun.color;
+		const color = this.config.sun.color;
 		if (this.config.glow) {
 			this.ctx.shadowBlur = 10;
 			this.ctx.shadowColor = color;
@@ -530,7 +527,7 @@ export class SkyMap {
 
 		this.drawDisk(coo, rad, color);
 		if (this.config.planets.labels.enabled) {
-			this.ctx.fillStyle = this.config.monochrome ? monochromeLabelColor : this.config.sun.label.color;
+			this.ctx.fillStyle = this.config.sun.label.color;
 			this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
 		}
 	}
@@ -554,7 +551,7 @@ export class SkyMap {
 
 			// star with mag = -1.44 will have size 8
 			const size = ((8 / 1.18 ** (star.mag + this.stars.mag.max)) * this.scaleMod) / this.fovFactor;
-			const color = this.config.monochrome ? this.config.stars.color : bvToRGB(star.bv);
+			const color = this.config.stars.color !== undefined ? this.config.stars.color : bvToRGB(star.bv);
 
 			if (this.config.glow) {
 				this.ctx.shadowBlur = 10;

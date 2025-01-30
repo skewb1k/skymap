@@ -1,7 +1,7 @@
 export type Config = {
 	stars: {
 		enabled: boolean;
-		color: string;
+		color: string | undefined;
 		size: number;
 	};
 	grid: {
@@ -28,6 +28,7 @@ export type Config = {
 	planets: {
 		enabled: boolean;
 		size: number;
+		color: string | undefined;
 		labels: {
 			enabled: boolean;
 			color: string;
@@ -52,17 +53,15 @@ export type Config = {
 		};
 	};
 	bgColor: string;
-	monochrome: boolean;
 	glow: boolean;
 };
 
 export const defaultConfig: Config = {
 	bgColor: "#000000",
 	glow: false,
-	monochrome: true,
 	stars: {
 		enabled: true,
-		color: "#fefefe",
+		color: undefined,
 		size: 1,
 	},
 	grid: {
@@ -107,6 +106,7 @@ export const defaultConfig: Config = {
 	planets: {
 		enabled: true,
 		size: 1,
+		color: undefined,
 		labels: {
 			enabled: true,
 			color: "#fefefe",
