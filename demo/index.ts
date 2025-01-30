@@ -42,6 +42,7 @@ const sm = new SkyMap(
 				color: "#64C8FF66",
 			},
 		},
+		monochrome: false,
 	},
 );
 

@@ -31,6 +31,8 @@ const defaultOptions = {
 	fov: 180,
 };
 
+const monochromeLabelColor = "#fefefe";
+
 export class SkyMap {
 	private container: HTMLDivElement;
 	private canvas: HTMLCanvasElement;
@@ -79,6 +81,10 @@ export class SkyMap {
 					...defaultConfig.constellations.lines,
 					...config.constellations?.lines,
 				},
+				labels:
+					config.constellations?.labels !== undefined
+						? config.constellations?.labels
+						: defaultConfig.constellations.labels,
 			},
 			planets: {
 				...defaultConfig.planets,
@@ -92,8 +98,9 @@ export class SkyMap {
 				...defaultConfig.moon,
 				...config.moon,
 			},
-			bgColor: config.bgColor || defaultConfig.bgColor,
-			glow: config.glow || defaultConfig.glow,
+			bgColor: config.bgColor !== undefined ? config.bgColor : defaultConfig.bgColor,
+			glow: config.glow !== undefined ? config.glow : defaultConfig.glow,
+			monochrome: config.monochrome !== undefined ? config.monochrome : defaultConfig.monochrome,
 		};
 		const opts = { ...defaultOptions, ...options };
 
@@ -381,7 +388,6 @@ export class SkyMap {
 					const dec = Angle.fromDegrees(decDeg);
 
 					const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
-
 					const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 					if (alt.degrees < -45) {
@@ -396,6 +402,10 @@ export class SkyMap {
 	}
 
 	private drawPlanets(): void {
+		const font = "Arial";
+		const fontSize = 12 * this.scaleMod;
+		this.ctx.font = `${fontSize}px ${font}`;
+
 		for (const planet of this.planets) {
 			const body = Body[planet.name as keyof typeof Body];
 			const equatorial = Equator(body, this.datetime.UTCDate, this.observer, true, true);
@@ -404,52 +414,84 @@ export class SkyMap {
 			const dec = Angle.fromDegrees(equatorial.dec);
 
 			const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
-
 			const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
+
+			const color = this.config.monochrome ? monochromeLabelColor : planet.color;
 
 			if (this.config.glow) {
 				this.ctx.shadowBlur = 10;
-				this.ctx.shadowColor = planet.color;
+				this.ctx.shadowColor = color;
 			}
 
-			this.drawDisk(coo, (planet.radius * this.scaleMod) / this.fovFactor, planet.color);
+			const rad = (planet.radius * this.scaleMod) / this.fovFactor;
+			const textWidth = this.ctx.measureText(planet.name).width;
+
+			this.drawDisk(coo, rad, color);
+			if (this.config.planets.labels) {
+				this.ctx.fillText(planet.name, coo.x - textWidth / 2, coo.y - rad * 1.5);
+			}
 		}
 	}
+
 	private drawMoon(): void {
+		const font = "Arial";
+		const fontSize = 15 * this.scaleMod;
+		this.ctx.font = `${fontSize}px ${font}`;
+
 		const equatorial = Equator(Body.Moon, this.datetime.UTCDate, this.observer, true, true);
 
 		const ra = Angle.fromHours(equatorial.ra);
 		const dec = Angle.fromDegrees(equatorial.dec);
 
 		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
-
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-		const color = "#fff";
+		const color = this.config.monochrome ? monochromeLabelColor : "#fff";
 		if (this.config.glow) {
 			this.ctx.shadowBlur = 10;
 			this.ctx.shadowColor = color;
 		}
-		this.drawDisk(coo, (8 * this.scaleMod) / this.fovFactor, color);
+
+		const rad = (4 * this.scaleMod) / this.fovFactor;
+
+		const text = "Moon";
+		const textWidth = this.ctx.measureText(text).width;
+
+		this.drawDisk(coo, rad, color);
+		if (this.config.planets.labels) {
+			this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
+		}
 	}
 
 	private drawSun(): void {
+		const font = "Arial";
+		const fontSize = 15 * this.scaleMod;
+		this.ctx.font = `${fontSize}px ${font}`;
+
 		const equatorial = Equator(Body.Sun, this.datetime.UTCDate, this.observer, true, true);
 
 		const ra = Angle.fromHours(equatorial.ra);
 		const dec = Angle.fromDegrees(equatorial.dec);
 
 		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
-
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 		// todo: move out
-		const color = "#ffe484";
+		const color = this.config.monochrome ? monochromeLabelColor : "#ffe484";
 		if (this.config.glow) {
 			this.ctx.shadowBlur = 10;
 			this.ctx.shadowColor = color;
 		}
-		this.drawDisk(coo, (10 * this.scaleMod) / this.fovFactor, color);
+
+		const rad = (8 * this.scaleMod) / this.fovFactor;
+
+		const text = "Sun";
+		const textWidth = this.ctx.measureText(text).width;
+
+		this.drawDisk(coo, rad, color);
+		if (this.config.planets.labels) {
+			this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
+		}
 	}
 
 	private drawBg(): void {
@@ -471,7 +513,7 @@ export class SkyMap {
 
 			// star with mag = -1.44 will have size 8
 			const size = ((8 / 1.18 ** (star.mag + this.stars.mag.max)) * this.scaleMod) / this.fovFactor;
-			const color = this.config.stars.monochrome ? this.config.stars.color : bvToRGB(star.bv);
+			const color = this.config.monochrome ? this.config.stars.color : bvToRGB(star.bv);
 
 			if (this.config.glow) {
 				this.ctx.shadowBlur = 10;

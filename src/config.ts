@@ -3,7 +3,6 @@ export type Config = {
 		enabled: boolean;
 		color: string;
 		size: number;
-		monochrome: boolean;
 	};
 	grid: {
 		enabled: boolean;
@@ -21,34 +20,36 @@ export type Config = {
 			color: string;
 			width: number;
 		};
+		labels: boolean;
 	};
 	planets: {
 		enabled: boolean;
 		size: number;
-		monochrome: boolean;
+		labels: boolean;
 	};
 	sun: {
 		enabled: boolean;
 		size: number;
-		monochrome: boolean;
+		label: boolean;
 	};
 	moon: {
 		enabled: boolean;
 		size: number;
-		monochrome: boolean;
+		label: boolean;
 	};
 	bgColor: string;
+	monochrome: boolean;
 	glow: boolean;
 };
 
 export const defaultConfig: Config = {
 	bgColor: "#000000",
 	glow: false,
+	monochrome: true,
 	stars: {
 		enabled: true,
 		color: "#fefefe",
 		size: 1,
-		monochrome: true,
 	},
 	grid: {
 		enabled: true,
@@ -66,20 +67,21 @@ export const defaultConfig: Config = {
 			color: "#aaa",
 			width: 1,
 		},
+		labels: true,
 	},
 	moon: {
 		enabled: true,
 		size: 1,
-		monochrome: false,
+		label: true,
 	},
 	sun: {
 		enabled: true,
 		size: 1,
-		monochrome: false,
+		label: true,
 	},
 	planets: {
 		enabled: true,
 		size: 1,
-		monochrome: false,
+		labels: true,
 	},
 };
