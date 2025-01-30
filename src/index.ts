@@ -1,6 +1,7 @@
 import { Body, Equator, Observer } from "astronomy-engine";
 import constellationsBoundariesData from "../data/constellations.boundaries.json";
 import constellationsLinesData from "../data/constellations.lines.json";
+import constellationsLabelsData from "../data/constellations.labels.json";
 import planets from "../data/planets.json";
 import starsData from "../data/stars.6.json";
 import Angle from "./Angle/Angle";
@@ -16,6 +17,7 @@ import type ConstellationLine from "./types/ConstellationLine.type";
 import type Coo from "./types/Coo.type";
 import type Planet from "./types/Planet.type";
 import type StarsData from "./types/StarsData.type";
+import type ConstellationLabel from "./types/ConstellationLabel.type";
 
 type Options = {
 	latitude: number;
@@ -55,6 +57,7 @@ export class SkyMap {
 	private planets: Planet[];
 	private constellationsLines: ConstellationLine[];
 	private constellationsBoundaries: ConstellationBoundary[];
+	private constellationsLabels: Map<string, ConstellationLabel>;
 
 	constructor(
 		container: HTMLDivElement,
@@ -135,6 +138,11 @@ export class SkyMap {
 			...constellation,
 			vertices: constellation.vertices.map((group) => group.map((pair) => pair as [number, number])),
 		}));
+		this.constellationsLabels = new Map();
+
+		for (const [key, value] of Object.entries(constellationsLabelsData)) {
+			this.constellationsLabels.set(key, { ...value, coords: [value.coords[0], value.coords[1]] });
+		}
 
 		this.render();
 	}
@@ -149,7 +157,7 @@ export class SkyMap {
 		return Math.tan(Angle.fromDegrees(fov / 4).radians);
 	}
 
-	private getObserver() {
+	private getObserver(): Observer {
 		return new Observer(this.latitude.degrees, this.longitude.degrees, 0);
 	}
 
@@ -357,7 +365,6 @@ export class SkyMap {
 					const dec = Angle.fromDegrees(decDeg);
 
 					const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
-
 					const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 					if (alt.degrees < -20 || j === 0) {
@@ -366,6 +373,27 @@ export class SkyMap {
 						lineTo(this.ctx, coo);
 					}
 				}
+			}
+
+			if (this.config.constellations.labels) {
+				const font = "Arial";
+				const fontSize = 10 * this.scaleMod;
+				this.ctx.font = `${fontSize}px ${font}`;
+
+				const constellationsLabel = this.constellationsLabels.get(constellation.id);
+				if (!constellationsLabel) throw new Error("contellation label not found");
+				const text = constellationsLabel.labels.la;
+				const textWidth = this.ctx.measureText(text).width;
+
+				const [raDeg, decDeg] = constellationsLabel.coords;
+				const ra = Angle.fromDegrees(raDeg);
+				const dec = Angle.fromDegrees(decDeg);
+
+				const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
+				const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
+
+				this.ctx.fillStyle = "#fefefe";
+				this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - fontSize / 2);
 			}
 			this.ctx.stroke();
 		});
@@ -502,7 +530,7 @@ export class SkyMap {
 
 	private drawStars(): void {
 		this.stars.stars.forEach((star) => {
-			if (star.mag > 4) return;
+			// if (star.mag > 5.2) return;
 			const starRa = Angle.fromDegrees(star.lon);
 			const starDec = Angle.fromDegrees(star.lat);
 

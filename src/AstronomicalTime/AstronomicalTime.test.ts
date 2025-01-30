@@ -1,4 +1,4 @@
-import { Angle } from "../Angle";
+import Angle from "../Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime";
 
 describe("JulianDate", () => {

@@ -39,10 +39,11 @@ const sm = new SkyMap(
 		// glow: true,
 		constellations: {
 			lines: {
-				color: "#64C8FF66",
+				// color: "#64C8FF66",
 			},
+			labels: true,
 		},
-		monochrome: false,
+		monochrome: true,
 	},
 );
 
