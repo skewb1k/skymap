@@ -6,7 +6,7 @@ import planets from "../data/planets.json";
 import starsData from "../data/stars.6.json";
 import Angle from "./Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
-import { type Config, defaultConfig } from "./config";
+import { type Config, defaultConfig, mergeConfigs } from "./config";
 import type DeepPartial from "./helper/DeepPartial";
 import { arcCircle, lineTo, moveTo } from "./helper/canvas";
 import { bvToRGB } from "./helper/color";
@@ -51,8 +51,6 @@ export class SkyMap {
 
 	private config: Config;
 
-	private fontFamily: string;
-
 	private stars: StarsData;
 	private planets: Planet[];
 	private constellationsLines: ConstellationLine[];
@@ -65,80 +63,24 @@ export class SkyMap {
 		config: DeepPartial<Config> = defaultConfig,
 	) {
 		this.container = container;
-		this.config = {
-			...defaultConfig,
-			stars: {
-				...defaultConfig.stars,
-				...config.stars,
-			},
-			grid: {
-				...defaultConfig.grid,
-				...config.grid,
-			},
-			constellations: {
-				boundaries: {
-					...defaultConfig.constellations.boundaries,
-					...config.constellations?.boundaries,
-				},
-				lines: {
-					...defaultConfig.constellations.lines,
-					...config.constellations?.lines,
-					labels: {
-						...defaultConfig.constellations.lines.labels,
-						...config.constellations?.lines?.labels,
-					},
-				},
-			},
-			planets: {
-				...defaultConfig.planets,
-				...config.planets,
-				labels: {
-					...defaultConfig.planets.labels,
-					...config.planets?.labels,
-				},
-			},
-			sun: {
-				...defaultConfig.sun,
-				...config.sun,
-				label: {
-					...defaultConfig.sun.label,
-					...config.sun?.label,
-				},
-			},
-			moon: {
-				...defaultConfig.moon,
-				...config.moon,
-				label: {
-					...defaultConfig.moon.label,
-					...config.moon?.label,
-				},
-			},
-			bgColor: config.bgColor !== undefined ? config.bgColor : defaultConfig.bgColor,
-			glow: config.glow !== undefined ? config.glow : defaultConfig.glow,
-		};
+		this.config = mergeConfigs(defaultConfig, config);
 		const opts = { ...defaultOptions, ...options };
-		this.fontFamily = "Arial";
 
 		const canvas = document.createElement("canvas");
-
-		this.radius = Math.min(this.container.offsetWidth, this.container.offsetHeight) / 2;
-		this.center = { x: this.radius, y: this.radius };
-		this.scaleMod = this.radius / 400;
-		canvas.width = this.radius * 2;
-		canvas.height = this.radius * 2;
 		canvas.style = `
 			width: 100%;
 			height: 100%;
 			display: block;
 		`;
 
+		this.radius = Math.min(this.container.offsetWidth, this.container.offsetHeight) / 2;
+		this.center = { x: this.radius, y: this.radius };
+		this.scaleMod = this.radius / 400;
+
+		canvas.width = this.radius * 2;
+		canvas.height = this.radius * 2;
+
 		const resizeObserver = new ResizeObserver(() => {
-			resizeCanvas();
-		});
-
-		resizeObserver.observe(container);
-
-		const resizeCanvas = () => {
 			const dpr = window.devicePixelRatio || 1;
 
 			// Get actual size of the div
@@ -148,7 +90,6 @@ export class SkyMap {
 			// Set canvas size to match container, but with high resolution
 			canvas.width = width * dpr;
 			canvas.height = height * dpr;
-			console.log(width * dpr);
 
 			this.radius = Math.min(width, height) / 2;
 			this.center = { x: this.radius, y: this.radius };
@@ -157,21 +98,13 @@ export class SkyMap {
 			// Scale context to avoid blurry graphics
 			this.ctx.scale(dpr, dpr);
 			this.render();
-		};
+		});
+
+		resizeObserver.observe(container);
 
 		this.canvas = canvas;
 		this.container.appendChild(canvas);
-
 		this.ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-		// const scaleFactor = 2; // Increase resolution manually
-
-		// canvas.width = this.radius * 2 * scaleFactor;
-		// canvas.height = this.radius * 2 * scaleFactor;
-
-		// canvas.style.width = `${this.radius * 2}px`;
-		// canvas.style.height = `${this.radius * 2}px`;
-
-		// this.ctx.scale(scaleFactor, scaleFactor);
 
 		this.latitude = Angle.fromDegrees(opts.latitude);
 		this.longitude = Angle.fromDegrees(opts.longitude);
@@ -197,14 +130,12 @@ export class SkyMap {
 		for (const [key, value] of Object.entries(constellationsLabelsData)) {
 			this.constellationsLabels.set(key, { ...value, coords: [value.coords[0], value.coords[1]] });
 		}
-
-		// this.render();
 	}
+
 	private cut() {
 		this.ctx.beginPath();
 		arcCircle(this.ctx, this.center, this.radius);
 		this.ctx.clip();
-		// this.ctx.closePath();
 	}
 
 	private calculateFovFactor(fov: number): number {
@@ -431,7 +362,7 @@ export class SkyMap {
 
 			if (this.config.constellations.lines.labels.enabled) {
 				const fontSize = 10 * this.scaleMod;
-				this.ctx.font = `${fontSize}px ${this.fontFamily}`;
+				this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 				const constellationsLabel = this.constellationsLabels.get(constellation.id);
 				if (!constellationsLabel) throw new Error("contellation label not found");
@@ -484,7 +415,7 @@ export class SkyMap {
 
 	private drawPlanets(): void {
 		const fontSize = 12 * this.scaleMod;
-		this.ctx.font = `${fontSize}px ${this.fontFamily}`;
+		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 		for (const planet of this.planets) {
 			const body = Body[planet.name as keyof typeof Body];
@@ -515,7 +446,7 @@ export class SkyMap {
 
 	private drawMoon(): void {
 		const fontSize = 15 * this.scaleMod;
-		this.ctx.font = `${fontSize}px ${this.fontFamily}`;
+		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 		const equatorial = Equator(Body.Moon, this.datetime.UTCDate, this.observer, true, true);
 
@@ -546,7 +477,7 @@ export class SkyMap {
 	private drawSun(): void {
 		const size = 8;
 		const fontSize = size * 2 * this.scaleMod;
-		this.ctx.font = `${fontSize}px ${this.fontFamily}`;
+		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 		const equatorial = Equator(Body.Sun, this.datetime.UTCDate, this.observer, true, true);
 

@@ -36,12 +36,13 @@ const sm = new SkyMap(
 	},
 	{
 		bgColor: "#0a0d13",
+		// fontFamily: "Roboto",
 		// glow: true,
 		constellations: {
 			lines: {
 				// color: "#64C8FF66",
 				labels: {
-					enabled: false,
+					// enabled: false,
 				},
 			},
 		},
