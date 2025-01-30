@@ -27,23 +27,31 @@ dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
 
 const container = document.querySelector("#container") as HTMLDivElement;
 
-const sm = new SkyMap(container, {
-	latitude: Number(latInput.value),
-	longitude: Number(lonInput.value),
-	datetime: new Date(dateInput.value),
-	colorConfig: {
-		bgColor: "#0a0d13",
-		gridColor: "#555",
-		starColor: "#fefefe",
-		starsTemperature: false,
-		constellationLinesColor: "#64C8FF66",
-		constellationBordersColor: "#aaa",
+const sm = new SkyMap(
+	container,
+	{
+		latitude: Number(latInput.value),
+		longitude: Number(lonInput.value),
+		datetime: new Date(dateInput.value),
 	},
-	// glow: true,
-	// constellationBordersColor: "#f00",
-	// gridColor: "#f00",
-	// constellationLinesColor: "#f00",
-});
+	{
+		bgColor: "#0a0d13",
+		glow: true,
+
+		// colorConfig: {
+		// 	bgColor: "#0a0d13",
+		// 	gridColor: "#555",
+		// 	starColor: "#fefefe",
+		// 	starsTemperature: false,
+		// 	constellationLinesColor: "#64C8FF66",
+		// 	constellationBordersColor: "#aaa",
+		// },
+		// glow: true,
+		// constellationBordersColor: "#f00",
+		// gridColor: "#f00",
+		// constellationLinesColor: "#f00",
+	},
+);
 
 randomLocation.onclick = () => {
 	const lat = Math.random() * 180 - 90;
