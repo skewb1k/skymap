@@ -53,6 +53,8 @@ export class SkyMap {
 
 	private config: Config;
 
+	private fontFamily: string;
+
 	private stars: StarsData;
 	private planets: Planet[];
 	private constellationsLines: ConstellationLine[];
@@ -83,29 +85,42 @@ export class SkyMap {
 				lines: {
 					...defaultConfig.constellations.lines,
 					...config.constellations?.lines,
+					labels: {
+						...defaultConfig.constellations.lines.labels,
+						...config.constellations?.lines?.labels,
+					},
 				},
-				labels:
-					config.constellations?.labels !== undefined
-						? config.constellations?.labels
-						: defaultConfig.constellations.labels,
 			},
 			planets: {
 				...defaultConfig.planets,
 				...config.planets,
+				labels: {
+					...defaultConfig.planets.labels,
+					...config.planets?.labels,
+				},
 			},
 			sun: {
 				...defaultConfig.sun,
 				...config.sun,
+				label: {
+					...defaultConfig.sun.label,
+					...config.sun?.label,
+				},
 			},
 			moon: {
 				...defaultConfig.moon,
 				...config.moon,
+				label: {
+					...defaultConfig.moon.label,
+					...config.moon?.label,
+				},
 			},
 			bgColor: config.bgColor !== undefined ? config.bgColor : defaultConfig.bgColor,
 			glow: config.glow !== undefined ? config.glow : defaultConfig.glow,
 			monochrome: config.monochrome !== undefined ? config.monochrome : defaultConfig.monochrome,
 		};
 		const opts = { ...defaultOptions, ...options };
+		this.fontFamily = "Arial";
 
 		this.radius = Math.min(this.container.offsetWidth, this.container.offsetHeight) / 2;
 		this.center = { x: this.radius, y: this.radius };
@@ -375,10 +390,9 @@ export class SkyMap {
 				}
 			}
 
-			if (this.config.constellations.labels) {
-				const font = "Arial";
+			if (this.config.constellations.lines.labels.enabled) {
 				const fontSize = 10 * this.scaleMod;
-				this.ctx.font = `${fontSize}px ${font}`;
+				this.ctx.font = `${fontSize}px ${this.fontFamily}`;
 
 				const constellationsLabel = this.constellationsLabels.get(constellation.id);
 				if (!constellationsLabel) throw new Error("contellation label not found");
@@ -392,7 +406,7 @@ export class SkyMap {
 				const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
 				const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-				this.ctx.fillStyle = "#fefefe";
+				this.ctx.fillStyle = this.config.constellations.lines.labels.color;
 				this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - fontSize / 2);
 			}
 			this.ctx.stroke();
@@ -430,9 +444,8 @@ export class SkyMap {
 	}
 
 	private drawPlanets(): void {
-		const font = "Arial";
 		const fontSize = 12 * this.scaleMod;
-		this.ctx.font = `${fontSize}px ${font}`;
+		this.ctx.font = `${fontSize}px ${this.fontFamily}`;
 
 		for (const planet of this.planets) {
 			const body = Body[planet.name as keyof typeof Body];
@@ -455,16 +468,15 @@ export class SkyMap {
 			const textWidth = this.ctx.measureText(planet.name).width;
 
 			this.drawDisk(coo, rad, color);
-			if (this.config.planets.labels) {
+			if (this.config.planets.labels.enabled) {
 				this.ctx.fillText(planet.name, coo.x - textWidth / 2, coo.y - rad * 1.5);
 			}
 		}
 	}
 
 	private drawMoon(): void {
-		const font = "Arial";
 		const fontSize = 15 * this.scaleMod;
-		this.ctx.font = `${fontSize}px ${font}`;
+		this.ctx.font = `${fontSize}px ${this.fontFamily}`;
 
 		const equatorial = Equator(Body.Moon, this.datetime.UTCDate, this.observer, true, true);
 
@@ -474,7 +486,7 @@ export class SkyMap {
 		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-		const color = this.config.monochrome ? monochromeLabelColor : "#fff";
+		const color = this.config.monochrome ? monochromeLabelColor : this.config.moon.color;
 		if (this.config.glow) {
 			this.ctx.shadowBlur = 10;
 			this.ctx.shadowColor = color;
@@ -486,15 +498,16 @@ export class SkyMap {
 		const textWidth = this.ctx.measureText(text).width;
 
 		this.drawDisk(coo, rad, color);
-		if (this.config.planets.labels) {
+		if (this.config.planets.labels.enabled) {
+			this.ctx.fillStyle = this.config.monochrome ? monochromeLabelColor : this.config.moon.label.color;
 			this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
 		}
 	}
 
 	private drawSun(): void {
-		const font = "Arial";
-		const fontSize = 15 * this.scaleMod;
-		this.ctx.font = `${fontSize}px ${font}`;
+		const size = 8;
+		const fontSize = size * 2 * this.scaleMod;
+		this.ctx.font = `${fontSize}px ${this.fontFamily}`;
 
 		const equatorial = Equator(Body.Sun, this.datetime.UTCDate, this.observer, true, true);
 
@@ -504,20 +517,20 @@ export class SkyMap {
 		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-		// todo: move out
-		const color = this.config.monochrome ? monochromeLabelColor : "#ffe484";
+		const color = this.config.monochrome ? monochromeLabelColor : this.config.sun.color;
 		if (this.config.glow) {
 			this.ctx.shadowBlur = 10;
 			this.ctx.shadowColor = color;
 		}
 
-		const rad = (8 * this.scaleMod) / this.fovFactor;
+		const rad = (size * this.scaleMod) / this.fovFactor;
 
 		const text = "Sun";
 		const textWidth = this.ctx.measureText(text).width;
 
 		this.drawDisk(coo, rad, color);
-		if (this.config.planets.labels) {
+		if (this.config.planets.labels.enabled) {
+			this.ctx.fillStyle = this.config.monochrome ? monochromeLabelColor : this.config.sun.label.color;
 			this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
 		}
 	}

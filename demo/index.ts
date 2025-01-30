@@ -40,10 +40,17 @@ const sm = new SkyMap(
 		constellations: {
 			lines: {
 				// color: "#64C8FF66",
+				labels: {
+					enabled: false,
+				},
 			},
-			labels: true,
 		},
-		monochrome: true,
+		planets: {
+			labels: {
+				enabled: false,
+			},
+		},
+		// monochrome: false,
 	},
 );
 

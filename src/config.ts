@@ -14,28 +14,42 @@ export type Config = {
 			enabled: boolean;
 			color: string;
 			width: number;
+			labels: {
+				enabled: boolean;
+				color: string;
+			};
 		};
 		boundaries: {
 			enabled: boolean;
 			color: string;
 			width: number;
 		};
-		labels: boolean;
 	};
 	planets: {
 		enabled: boolean;
 		size: number;
-		labels: boolean;
+		labels: {
+			enabled: boolean;
+			color: string;
+		};
 	};
 	sun: {
 		enabled: boolean;
 		size: number;
-		label: boolean;
+		color: string;
+		label: {
+			enabled: boolean;
+			color: string;
+		};
 	};
 	moon: {
 		enabled: boolean;
 		size: number;
-		label: boolean;
+		color: string;
+		label: {
+			enabled: boolean;
+			color: string;
+		};
 	};
 	bgColor: string;
 	monochrome: boolean;
@@ -61,27 +75,41 @@ export const defaultConfig: Config = {
 			enabled: true,
 			color: "#eaeaea",
 			width: 2,
+			labels: {
+				enabled: true,
+				color: "#fefefe",
+			},
 		},
 		boundaries: {
 			enabled: false,
 			color: "#aaa",
 			width: 1,
 		},
-		labels: true,
 	},
 	moon: {
 		enabled: true,
 		size: 1,
-		label: true,
+		color: "#eaeaea",
+		label: {
+			enabled: true,
+			color: "#fefefe",
+		},
 	},
 	sun: {
 		enabled: true,
 		size: 1,
-		label: true,
+		color: "#ffe484",
+		label: {
+			enabled: true,
+			color: "#fefefe",
+		},
 	},
 	planets: {
 		enabled: true,
 		size: 1,
-		labels: true,
+		labels: {
+			enabled: true,
+			color: "#fefefe",
+		},
 	},
 };
