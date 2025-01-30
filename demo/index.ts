@@ -36,7 +36,7 @@ const sm = new SkyMap(
 	},
 	{
 		bgColor: "#0a0d13",
-		glow: true,
+		// glow: true,
 		constellations: {
 			lines: {
 				color: "#64C8FF66",

@@ -17,7 +17,7 @@ import type Coo from "./types/Coo.type";
 import type Planet from "./types/Planet.type";
 import type StarsData from "./types/StarsData.type";
 
-type SkyMapOptions = {
+type Options = {
 	latitude: number;
 	longitude: number;
 	datetime: Date;
@@ -56,7 +56,7 @@ export class SkyMap {
 
 	constructor(
 		container: HTMLDivElement,
-		options: Partial<SkyMapOptions> = defaultOptions,
+		options: Partial<Options> = defaultOptions,
 		config: DeepPartial<Config> = defaultConfig,
 	) {
 		this.container = container;
@@ -135,7 +135,7 @@ export class SkyMap {
 		this.ctx.beginPath();
 		arcCircle(this.ctx, this.center, this.radius);
 		this.ctx.clip();
-		this.ctx.closePath();
+		// this.ctx.closePath();
 	}
 
 	private calculateFovFactor(fov: number): number {
@@ -331,7 +331,6 @@ export class SkyMap {
 		this.ctx.strokeStyle = this.config.bgColor;
 		arcCircle(this.ctx, this.center, this.radius);
 		this.ctx.stroke();
-		this.ctx.closePath();
 	}
 
 	private drawConstellationsLines(): void {
@@ -454,12 +453,14 @@ export class SkyMap {
 	}
 
 	private drawBg(): void {
-		this.drawDisk({ x: this.radius, y: this.radius }, this.radius * 1.5, this.config.bgColor);
+		this.ctx.fillStyle = this.config.bgColor;
+		this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+		// this.drawDisk({ x: this.radius, y: this.radius }, this.radius * 1.5, this.config.bgColor);
 	}
 
 	private drawStars(): void {
 		this.stars.stars.forEach((star) => {
-			if (star.mag > 5.3) return;
+			if (star.mag > 4) return;
 			const starRa = Angle.fromDegrees(star.lon);
 			const starDec = Angle.fromDegrees(star.lat);
 
@@ -476,6 +477,7 @@ export class SkyMap {
 				this.ctx.shadowBlur = 10;
 				this.ctx.shadowColor = color;
 			}
+
 			this.drawDisk(coo, size, color);
 		});
 	}
@@ -486,8 +488,8 @@ export class SkyMap {
 		this.ctx.lineWidth = this.config.grid.width * this.scaleMod;
 
 		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
-			const ra = Angle.fromDegrees(raDeg);
 			this.ctx.beginPath();
+			const ra = Angle.fromDegrees(raDeg);
 
 			for (let decDeg = raDeg % 90 === 0 ? -90 : -80; decDeg <= (raDeg % 90 === 0 ? 90 : 80); decDeg += 5) {
 				const dec = Angle.fromDegrees(decDeg);
@@ -506,17 +508,16 @@ export class SkyMap {
 				const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 				lineTo(this.ctx, coo);
 			}
-
 			this.ctx.stroke();
 		}
 
+		this.ctx.beginPath();
 		for (let decDeg = -80; decDeg <= 80; decDeg += 20) {
 			// skips equator if latitude is 90 or -90
 			if (decDeg === 0 && (this.latitude.degrees === 90 || this.latitude.degrees === -90)) {
 				continue;
 			}
 			const dec = Angle.fromDegrees(decDeg);
-			this.ctx.beginPath();
 			let firstPointVisible = false;
 
 			for (let raDeg = 0; raDeg <= 360; raDeg += 5) {
@@ -536,8 +537,7 @@ export class SkyMap {
 					lineTo(this.ctx, coo);
 				}
 			}
-
-			this.ctx.stroke();
 		}
+		this.ctx.stroke();
 	}
 }

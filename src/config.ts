@@ -62,7 +62,7 @@ export const defaultConfig: Config = {
 			width: 2,
 		},
 		borders: {
-			enabled: true,
+			enabled: false,
 			color: "#aaa",
 			width: 1,
 		},
