@@ -44,7 +44,7 @@ bun add skymap
 <body>
   <div id="sky-container" style="width: 500px; height: 500px;"></div>
   <script type="module">
-    import { SkyMap } from "@nardora/skymap";
+    import { SkyMap } from "skymap";
 
     const sky = new SkyMap(document.getElementById("sky-container"), {
       latitude: 52.52,
@@ -60,7 +60,7 @@ bun add skymap
 ### 🔹 **React (With Hooks)**
 ```tsx
 import { useEffect, useRef } from "react";
-import { SkyMap } from "@nardora/skymap";
+import { SkyMap } from "skymap";
 
 const SkyMapComponent = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,7 +91,7 @@ export default SkyMapComponent;
 
 <script setup>
 import { onMounted, ref } from "vue";
-import { SkyMap } from "@nardora/skymap";
+import { SkyMap } from "skymap";
 
 const skyContainer = ref(null);
 let skyMapInstance;
