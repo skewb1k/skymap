@@ -7,11 +7,11 @@ enum AngleUnit {
 export default class Angle {
 	private readonly _radians: number;
 
-	private degrees_cache: number | undefined;
-	private hours_cache: number | undefined;
-	private sin_cache: number | undefined;
-	private cos_cache: number | undefined;
-	private tan_cache: number | undefined;
+	private degreesCache: number | undefined;
+	private hoursCache: number | undefined;
+	private sinCache: number | undefined;
+	private cosCache: number | undefined;
+	private tanCache: number | undefined;
 
 	private constructor(value: number, unit = AngleUnit.Radians) {
 		this._radians =
@@ -34,15 +34,11 @@ export default class Angle {
 		return (hours * Math.PI) / 12;
 	}
 
-	multiply(factor: number): Angle {
-		return new Angle(this._radians * factor, AngleUnit.Radians);
-	}
-
 	get degrees(): number {
-		if (this.degrees_cache) return this.degrees_cache;
+		if (this.degreesCache) return this.degreesCache;
 
 		const degrees = this.radToDeg(this._radians);
-		this.degrees_cache = degrees;
+		this.degreesCache = degrees;
 		return degrees;
 	}
 
@@ -51,10 +47,10 @@ export default class Angle {
 	}
 
 	get hours(): number {
-		if (this.hours_cache) return this.hours_cache;
+		if (this.hoursCache) return this.hoursCache;
 
 		const hours = this.radToHours(this._radians);
-		this.hours_cache = hours;
+		this.hoursCache = hours;
 		return hours;
 	}
 
@@ -83,51 +79,55 @@ export default class Angle {
 		return new Angle(normalizedRadians);
 	}
 
-	add(other: Angle): Angle {
+	public add(other: Angle): Angle {
 		return new Angle(this._radians + other._radians);
 	}
 
-	subtract(other: Angle): Angle {
+	public subtract(other: Angle): Angle {
 		return new Angle(this._radians - other._radians);
 	}
 
-	addDegrees(degrees: number): Angle {
+	public addDegrees(degrees: number): Angle {
 		return this.add(Angle.fromDegrees(degrees));
 	}
 
-	addRadians(radians: number): Angle {
+	public addRadians(radians: number): Angle {
 		return this.add(Angle.fromRadians(radians));
 	}
 
+	public multiply(factor: number): Angle {
+		return new Angle(this._radians * factor, AngleUnit.Radians);
+	}
+
 	get sin(): number {
-		if (this.sin_cache) return this.sin_cache;
+		if (this.sinCache) return this.sinCache;
 
 		const sin = Math.sin(this._radians);
-		this.sin_cache = sin;
+		this.sinCache = sin;
 		return sin;
 	}
 
 	get cos(): number {
-		if (this.cos_cache) return this.cos_cache;
+		if (this.cosCache) return this.cosCache;
 
 		const cos = Math.cos(this._radians);
-		this.cos_cache = cos;
+		this.cosCache = cos;
 		return cos;
 	}
 
 	get tan(): number {
-		if (this.tan_cache) return this.tan_cache;
+		if (this.tanCache) return this.tanCache;
 
 		const tan = Math.tan(this._radians);
-		this.tan_cache = tan;
+		this.tanCache = tan;
 		return tan;
 	}
 
 	get ctan(): number {
-		if (this.tan_cache) return 1 / this.tan_cache;
+		if (this.tanCache) return 1 / this.tanCache;
 
 		const tan = Math.tan(this._radians);
-		this.tan_cache = tan;
+		this.tanCache = tan;
 		return 1 / tan;
 	}
 }
