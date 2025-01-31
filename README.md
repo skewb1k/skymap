@@ -11,12 +11,12 @@
 
 ## ✨ Features
 
-✅ **Realistic Star Rendering** – Uses scientifically accurate colors and positions.
-✅ **Customizable** – Adjust colors, sizes, labels and more.
-✅ **Framework-Agnostic** – Compatible with **Vanilla JS, React, Vue, Svelte, Next.js, and others**.
-✅ **Optimized for Performance** – Smooth rendering with efficient WebGL & Canvas APIs.
-✅ **Supports Real-Time Updates** – Change time, location, and visibility dynamically.
-✅ **Well-Documented** – Clear API with examples for easy integration.
+-  **Realistic Star Rendering** – Uses scientifically accurate colors and positions.
+-  **Customizable** – Adjust colors, sizes, labels and more.
+-  **Framework-Agnostic** – Compatible with **Vanilla JS, React, Vue, Svelte, Next.js, and others**.
+-  **Optimized for Performance** – Smooth rendering with efficient WebGL & Canvas APIs.
+-  **Supports Real-Time Updates** – Change time, location, and visibility dynamically.
+-  **Well-Documented** – Clear API with examples for easy integration.
 
 ---
 
