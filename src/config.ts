@@ -18,6 +18,7 @@ export type Config = {
 			width: number;
 			labels: {
 				enabled: boolean;
+				size: number;
 				color: string;
 			};
 		};
@@ -33,6 +34,7 @@ export type Config = {
 		color: string | undefined;
 		labels: {
 			enabled: boolean;
+			size: number;
 			color: string;
 		};
 	};
@@ -42,6 +44,7 @@ export type Config = {
 		color: string;
 		label: {
 			enabled: boolean;
+			size: number;
 			color: string;
 		};
 	};
@@ -51,6 +54,7 @@ export type Config = {
 		color: string;
 		label: {
 			enabled: boolean;
+			size: number;
 			color: string;
 		};
 	};
@@ -82,6 +86,7 @@ export const defaultConfig: Config = {
 			width: 2,
 			labels: {
 				enabled: true,
+				size: 1,
 				color: "#fefefe",
 			},
 		},
@@ -97,6 +102,7 @@ export const defaultConfig: Config = {
 		color: "#eaeaea",
 		label: {
 			enabled: true,
+			size: 1,
 			color: "#fefefe",
 		},
 	},
@@ -106,6 +112,7 @@ export const defaultConfig: Config = {
 		color: "#ffe484",
 		label: {
 			enabled: true,
+			size: 1,
 			color: "#fefefe",
 		},
 	},
@@ -115,6 +122,7 @@ export const defaultConfig: Config = {
 		color: undefined,
 		labels: {
 			enabled: true,
+			size: 1,
 			color: "#fefefe",
 		},
 	},

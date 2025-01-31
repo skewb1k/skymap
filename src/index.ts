@@ -40,7 +40,7 @@ const planets = [
 	{
 		id: "mer",
 		body: Body.Mercury,
-		// radiu: 3,
+		// radius: 3,
 		radius: 1,
 		color: "#b0b0b0",
 	},
@@ -406,7 +406,7 @@ export class SkyMap {
 			}
 
 			if (this.config.constellations.lines.labels.enabled) {
-				const fontSize = 10 * this.scaleMod;
+				const fontSize = 10 * this.scaleMod * this.config.constellations.lines.labels.size;
 				this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 				const constellationsLabel = this.constellationsLabels.get(constellation.id);
@@ -461,7 +461,7 @@ export class SkyMap {
 	}
 
 	private drawPlanets(): void {
-		const fontSize = 12 * this.scaleMod;
+		const fontSize = 12 * this.scaleMod * this.config.planets.labels.size;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 		for (const planet of planets) {
@@ -493,7 +493,8 @@ export class SkyMap {
 	}
 
 	private drawMoon(): void {
-		const fontSize = 15 * this.scaleMod;
+		const size = 5;
+		const fontSize = size * 2 * this.scaleMod * this.config.moon.label.size;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 		const equatorial = Equator(Body.Moon, this.datetime.UTCDate, this.observer, true, true);
@@ -525,7 +526,7 @@ export class SkyMap {
 
 	private drawSun(): void {
 		const size = 8;
-		const fontSize = size * 2 * this.scaleMod;
+		const fontSize = size * 2 * this.scaleMod * this.config.sun.label.size;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 		const equatorial = Equator(Body.Sun, this.datetime.UTCDate, this.observer, true, true);
@@ -567,7 +568,7 @@ export class SkyMap {
 			const starDec = Angle.fromDegrees(star.lat);
 
 			const { alt, az } = equatorialToHorizontal(starRa, starDec, this.latitude, this.lst);
-			if (alt.degrees < 0) return;
+			if (alt.degrees < 0) continue;
 
 			const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
