@@ -3,7 +3,6 @@ import Angle from "../Angle/Angle";
 export default class AstronomicalTime {
 	private readonly date: Date;
 
-	private lstCache: Angle | undefined;
 	private gstCache: Angle | undefined;
 	private julianDateCache: number | undefined;
 
@@ -73,9 +72,6 @@ export default class AstronomicalTime {
 	 * @returns The Local Sidereal Time (LST) in degrees.
 	 */
 	public LST(longitude: Angle): Angle {
-		if (this.lstCache === undefined) {
-			this.lstCache = this.GST.add(longitude);
-		}
-		return this.lstCache;
+		return this.GST.add(longitude);
 	}
 }
