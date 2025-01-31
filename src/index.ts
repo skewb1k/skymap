@@ -10,7 +10,7 @@ import Angle from "./Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
 import { type Config, createReactiveConfig, defaultConfig, mergeConfigs } from "./config";
 import type DeepPartial from "./helpers/DeepPartial";
-import { arcCircle, lineTo, moveTo } from "./helpers/canvas";
+import { arcCircle, clipCircle, lineTo, moveTo } from "./helpers/canvas";
 import { bvToRGB } from "./helpers/color";
 import equatorialToHorizontal from "./helpers/equatorialToHorizontal";
 import projectSphericalTo2D from "./helpers/projectSphericalTo2D";
@@ -174,12 +174,6 @@ export class SkyMap {
 		updateCanvasSize();
 	}
 
-	private cut() {
-		this.ctx.beginPath();
-		arcCircle(this.ctx, this.center, this.radius);
-		this.ctx.clip();
-	}
-
 	/**
 	 * Calculates the factor used for field-of-view projection. TODO: move out
 	 *
@@ -196,16 +190,16 @@ export class SkyMap {
 
 	private render(): void {
 		// const now = performance.now();
-		this.cut();
+		clipCircle(this.ctx, this.center, this.radius);
 		this.drawBg();
 
-		if (this.config.grid.enabled) this.drawGrid();
-		if (this.config.constellations.lines.enabled) this.drawConstellationsLines();
-		if (this.config.constellations.boundaries.enabled) this.drawConstellationsBoundaries();
-		if (this.config.stars.enabled) this.drawStars();
-		if (this.config.planets.enabled) this.drawPlanets();
-		if (this.config.sun.enabled) this.drawSun();
-		if (this.config.moon.enabled) this.drawMoon();
+		this.drawGrid();
+		this.drawConstellationsLines();
+		this.drawConstellationsBoundaries();
+		this.drawStars();
+		this.drawPlanets();
+		this.drawSun();
+		this.drawMoon();
 
 		this.drawBorder();
 		// console.log(performance.now() - now);
@@ -367,6 +361,7 @@ export class SkyMap {
 	}
 
 	private drawConstellationsLines(): void {
+		if (!this.config.constellations.lines.enabled) return;
 		const fontSize = this.scaleMod * this.config.constellations.lines.labels.fontSize;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 		this.ctx.strokeStyle = this.config.constellations.lines.color;
@@ -420,6 +415,7 @@ export class SkyMap {
 	}
 
 	private drawConstellationsBoundaries(): void {
+		if (!this.config.constellations.boundaries.enabled) return;
 		this.ctx.strokeStyle = this.config.constellations.boundaries.color;
 		this.ctx.lineWidth = this.config.constellations.boundaries.width * this.scaleMod;
 		if (this.config.glow) {
@@ -450,6 +446,7 @@ export class SkyMap {
 	}
 
 	private drawPlanets(): void {
+		if (!this.config.planets.enabled) return;
 		const fontSize = this.scaleMod * this.config.planets.labels.fontSize;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
@@ -484,6 +481,7 @@ export class SkyMap {
 	}
 
 	private drawMoon(): void {
+		if (!this.config.moon.enabled) return;
 		const fontSize = this.scaleMod * this.config.moon.label.fontSize;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
@@ -517,6 +515,7 @@ export class SkyMap {
 	}
 
 	private drawSun(): void {
+		if (!this.config.sun.enabled) return;
 		const fontSize = this.scaleMod * this.config.sun.label.fontSize;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
@@ -555,6 +554,7 @@ export class SkyMap {
 	}
 
 	private drawStars(): void {
+		if (!this.config.stars.enabled) return;
 		for (const star of this.stars.stars) {
 			// if (star.mag > 5.2) return;
 			const starRa = Angle.fromDegrees(star.lon);
@@ -579,7 +579,7 @@ export class SkyMap {
 		}
 	}
 
-	private drawGrid() {
+	private drawGrid(): void {
 		if (!this.config.grid.enabled) return;
 		this.ctx.strokeStyle = this.config.grid.color;
 		this.ctx.lineWidth = this.config.grid.width * this.scaleMod;
