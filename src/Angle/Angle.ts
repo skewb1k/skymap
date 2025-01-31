@@ -74,7 +74,7 @@ export default class Angle {
 	 * Normalizes an angle to the range [0, 2π).
 	 * @returns A new Angle.
 	 */
-	normalize(): Angle {
+	public normalize(): Angle {
 		const twoPi = 2 * Math.PI;
 		let normalizedRadians = this._radians % twoPi;
 		if (normalizedRadians < 0) {
