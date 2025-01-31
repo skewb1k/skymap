@@ -5,7 +5,6 @@
 🚀 **Designed for simplicity, customization, and performance.**
 
 <!-- [![npm version](https://img.shields.io/npm/v/@nardora/skymap)](https://www.npmjs.com/package/@nardora/skymap) -->
-[![License](https://img.shields.io/github/license/skewb1k/skymap)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/skewb1k/skymap?style=social)](https://github.com/nardora/skymap)
 
 ---
