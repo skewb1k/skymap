@@ -78,19 +78,19 @@ randomTime.onclick = () => {
 };
 
 gridCheckbox.addEventListener("change", () => {
-	sm.setShowGrid(gridCheckbox.checked);
+	sm.config.grid.enabled = gridCheckbox.checked;
 });
 
 starsCheckbox.addEventListener("change", () => {
-	sm.setShowStars(starsCheckbox.checked);
+	sm.config.stars.enabled = starsCheckbox.checked;
 });
 
 constellationsLinesCheckbox.addEventListener("change", () => {
-	sm.setShowConstellationsLines(constellationsLinesCheckbox.checked);
+	sm.config.constellations.lines.enabled = constellationsLinesCheckbox.checked;
 });
 
 constellationsBoundariesCheckbox.addEventListener("change", () => {
-	sm.setShowConstellationsBoundaries(constellationsBoundariesCheckbox.checked);
+	sm.config.constellations.boundaries.enabled = constellationsBoundariesCheckbox.checked;
 });
 
 fovRange.addEventListener("input", () => {

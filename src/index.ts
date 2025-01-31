@@ -14,6 +14,7 @@ import { arcCircle, lineTo, moveTo } from "./helpers/canvas";
 import { bvToRGB } from "./helpers/color";
 import equatorialToHorizontal from "./helpers/equatorialToHorizontal";
 import projectSphericalTo2D from "./helpers/projectSphericalTo2D";
+import { planets } from "./planets";
 import type ConstellationBoundary from "./types/ConstellationBoundary.type";
 import type ConstellationLabel from "./types/ConstellationLabel.type";
 import type ConstellationLine from "./types/ConstellationLine.type";
@@ -21,7 +22,6 @@ import type Coo from "./types/Coo.type";
 import type Labels from "./types/Labels.type";
 import type PlanetsLabels from "./types/PlanetLabels.type";
 import type StarsData from "./types/StarsData.type";
-import { planets } from "./planets";
 
 /**
  * Data used to initialize the sky map view.
@@ -110,11 +110,9 @@ export class SkyMap {
 		this.container = container;
 
 		const canvas = document.createElement("canvas");
-		canvas.style = `
-			width: 100%;
-			height: 100%;
-			display: block;
-		`;
+		canvas.style.width = "100%";
+		canvas.style.height = "100%";
+		canvas.style.display = "block";
 
 		this.radius = Math.min(this.container.offsetWidth, this.container.offsetHeight) / 2;
 		this.center = { x: this.radius, y: this.radius };
@@ -122,28 +120,6 @@ export class SkyMap {
 
 		canvas.width = this.radius * 2;
 		canvas.height = this.radius * 2;
-
-		const resizeObserver = new ResizeObserver(() => {
-			const dpr = window.devicePixelRatio || 1;
-
-			// Get actual size of the div
-			const width = container.clientWidth;
-			const height = container.clientHeight;
-
-			// Set canvas size to match container, but with high resolution
-			canvas.width = width * dpr;
-			canvas.height = height * dpr;
-
-			this.radius = Math.min(width, height) / 2;
-			this.center = { x: this.radius, y: this.radius };
-			this.scaleMod = this.radius / 400;
-
-			// Scale context to avoid blurry graphics
-			this.ctx.scale(dpr, dpr);
-			this.render();
-		});
-
-		resizeObserver.observe(container);
 
 		this.canvas = canvas;
 		this.container.appendChild(canvas);
@@ -171,6 +147,29 @@ export class SkyMap {
 		}
 
 		this.config = createReactiveConfig(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
+
+		const updateCanvasSize = () => {
+			const dpr = window.devicePixelRatio || 1;
+
+			// Get the actual size of the container
+			const width = container.clientWidth;
+			const height = container.clientHeight;
+
+			// Set canvas dimensions for high resolution rendering
+			canvas.width = width * dpr;
+			canvas.height = height * dpr;
+
+			this.radius = Math.min(width, height) / 2;
+			this.center = { x: this.radius, y: this.radius };
+			this.scaleMod = this.radius / 400;
+
+			// Scale the context to match the DPR
+			this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+			this.render();
+		};
+
+		window.addEventListener("resize", updateCanvasSize);
+		updateCanvasSize();
 	}
 
 	private cut() {
@@ -362,30 +361,6 @@ export class SkyMap {
 
 	public setFov(fov: number): this {
 		this.fovFactor = this.calculateFovFactor(fov);
-		this.render();
-		return this;
-	}
-
-	public setShowConstellationsLines(value: boolean): this {
-		this.config.constellations.lines.enabled = value;
-		this.render();
-		return this;
-	}
-
-	public setShowConstellationsBoundaries(value: boolean): this {
-		this.config.constellations.boundaries.enabled = value;
-		this.render();
-		return this;
-	}
-
-	public setShowGrid(value: boolean): this {
-		this.config.grid.enabled = value;
-		this.render();
-		return this;
-	}
-
-	public setShowStars(value: boolean): this {
-		this.config.stars.enabled = value;
 		this.render();
 		return this;
 	}
