@@ -97,7 +97,8 @@ export class SkyMap {
 	private fovFactor: number;
 	private lst: Angle;
 
-	private config: Config;
+	public config: Config;
+	public configLoaded: boolean;
 
 	private stars: StarsData;
 	private planetLabels: PlanetsLabels;
@@ -110,11 +111,9 @@ export class SkyMap {
 	constructor(
 		container: HTMLDivElement,
 		options: Partial<Options> = defaultOptions,
-		config: DeepPartial<Config> = defaultConfig,
+		config: DeepPartial<Config> = this.createReactiveConfig(defaultConfig),
 	) {
 		this.container = container;
-		this.config = mergeConfigs(defaultConfig, config);
-		const opts = { ...defaultOptions, ...options };
 
 		const canvas = document.createElement("canvas");
 		canvas.style = `
@@ -156,6 +155,8 @@ export class SkyMap {
 		this.container.appendChild(canvas);
 		this.ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
+		const opts = { ...defaultOptions, ...options };
+
 		this.latitude = Angle.fromDegrees(opts.latitude);
 		this.longitude = Angle.fromDegrees(opts.longitude);
 		this.datetime = AstronomicalTime.fromUTCDate(opts.datetime);
@@ -175,6 +176,51 @@ export class SkyMap {
 		for (const [key, value] of Object.entries(constellationsLabelsData)) {
 			this.constellationsLabels.set(key, value);
 		}
+
+		this.configLoaded = false;
+		this.config = this.createReactiveConfig(mergeConfigs(defaultConfig, config));
+		this.configLoaded = true;
+	}
+
+	// private createReactiveConfig(config: Config): Config {
+	// 	return new Proxy<Config>(config, {
+	// 		set: (target: Config, prop: any, value: any): boolean => {
+	// 			(target as any)[prop] = value;
+	// 			this.render();
+	// 			return true;
+	// 		},
+	// 	});
+	// }
+
+	private createReactiveConfig(config: Config): Config {
+		// Recursive Proxy handler
+		const handler = {
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			set: (target: any, prop: string | symbol, value: any): boolean => {
+				target[prop] = value;
+				if (this.configLoaded) {
+					this.render();
+				}
+				return true;
+			},
+		};
+
+		const proxyConfig = new Proxy(config, handler);
+
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		const deepProxy = (obj: any) => {
+			if (obj && typeof obj === "object") {
+				for (const key of Object.keys(obj)) {
+					if (typeof obj[key] === "object") {
+						obj[key] = new Proxy(obj[key], handler);
+						deepProxy(obj[key]);
+					}
+				}
+			}
+		};
+
+		deepProxy(proxyConfig);
+		return proxyConfig;
 	}
 
 	private cut() {
