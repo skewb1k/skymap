@@ -8,7 +8,7 @@ import starsData from "../data/stars.6.json";
 import sunLabelsData from "../data/sun.labels.json";
 import Angle from "./Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
-import { type Config, defaultConfig, mergeConfigs } from "./config";
+import { type Config, createReactiveConfig, defaultConfig, mergeConfigs } from "./config";
 import type DeepPartial from "./helpers/DeepPartial";
 import { arcCircle, lineTo, moveTo } from "./helpers/canvas";
 import { bvToRGB } from "./helpers/color";
@@ -98,7 +98,6 @@ export class SkyMap {
 	private lst: Angle;
 
 	public config: Config;
-	public configLoaded: boolean;
 
 	private stars: StarsData;
 	private planetLabels: PlanetsLabels;
@@ -108,10 +107,14 @@ export class SkyMap {
 	private constellationsBoundaries: ConstellationBoundary[];
 	private constellationsLabels: Map<string, ConstellationLabel>;
 
+	private configUpdatedHandler = () => {
+		this.render();
+	};
+
 	constructor(
 		container: HTMLDivElement,
 		options: Partial<Options> = defaultOptions,
-		config: DeepPartial<Config> = this.createReactiveConfig(defaultConfig),
+		config: DeepPartial<Config> = createReactiveConfig(defaultConfig, this.configUpdatedHandler),
 	) {
 		this.container = container;
 
@@ -177,50 +180,7 @@ export class SkyMap {
 			this.constellationsLabels.set(key, value);
 		}
 
-		this.configLoaded = false;
-		this.config = this.createReactiveConfig(mergeConfigs(defaultConfig, config));
-		this.configLoaded = true;
-	}
-
-	// private createReactiveConfig(config: Config): Config {
-	// 	return new Proxy<Config>(config, {
-	// 		set: (target: Config, prop: any, value: any): boolean => {
-	// 			(target as any)[prop] = value;
-	// 			this.render();
-	// 			return true;
-	// 		},
-	// 	});
-	// }
-
-	private createReactiveConfig(config: Config): Config {
-		// Recursive Proxy handler
-		const handler = {
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			set: (target: any, prop: string | symbol, value: any): boolean => {
-				target[prop] = value;
-				if (this.configLoaded) {
-					this.render();
-				}
-				return true;
-			},
-		};
-
-		const proxyConfig = new Proxy(config, handler);
-
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		const deepProxy = (obj: any) => {
-			if (obj && typeof obj === "object") {
-				for (const key of Object.keys(obj)) {
-					if (typeof obj[key] === "object") {
-						obj[key] = new Proxy(obj[key], handler);
-						deepProxy(obj[key]);
-					}
-				}
-			}
-		};
-
-		deepProxy(proxyConfig);
-		return proxyConfig;
+		this.config = createReactiveConfig(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
 	}
 
 	private cut() {
