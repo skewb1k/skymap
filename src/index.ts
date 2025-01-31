@@ -4,6 +4,8 @@ import constellationsLabelsData from "../data/constellations.labels.json";
 import constellationsLinesData from "../data/constellations.lines.json";
 import planetsLabelsData from "../data/planets.labels.json";
 import starsData from "../data/stars.6.json";
+import moonLabelsData from "../data/moon.labels.json";
+import sunLabelsData from "../data/sun.labels.json";
 import Angle from "./Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
 import { type Config, defaultConfig, mergeConfigs } from "./config";
@@ -18,6 +20,7 @@ import type ConstellationLine from "./types/ConstellationLine.type";
 import type Coo from "./types/Coo.type";
 import type PlanetsLabels from "./types/PlanetLabels.type";
 import type StarsData from "./types/StarsData.type";
+import type Labels from "./types/Labels.type";
 
 type Options = {
 	latitude: number;
@@ -98,6 +101,8 @@ export class SkyMap {
 
 	private stars: StarsData;
 	private planetLabels: PlanetsLabels;
+	private moonLabels: Labels;
+	private sunLabels: Labels;
 	private constellationsLines: ConstellationLine[];
 	private constellationsBoundaries: ConstellationBoundary[];
 	private constellationsLabels: Map<string, ConstellationLabel>;
@@ -161,6 +166,8 @@ export class SkyMap {
 
 		this.stars = starsData;
 		this.planetLabels = planetsLabelsData;
+		this.moonLabels = moonLabelsData;
+		this.sunLabels = sunLabelsData;
 		this.constellationsLines = constellationsLinesData;
 		this.constellationsBoundaries = constellationsBoundariesData;
 
@@ -470,12 +477,11 @@ export class SkyMap {
 				this.ctx.shadowColor = color;
 			}
 
-			const radius = (planet.radius * this.scaleMod) / this.fovFactor;
+			const radius = (planet.radius * this.scaleMod * this.config.planets.size) / this.fovFactor;
 			this.drawDisk(coo, radius, color);
 
 			if (this.config.planets.labels.enabled) {
-				const lang = "en";
-				const text = this.planetLabels[planet.id][lang];
+				const text = this.planetLabels[planet.id][this.config.language];
 				if (text) {
 					const textWidth = this.ctx.measureText(text).width;
 					this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - radius - fontSize / 2);
@@ -504,13 +510,14 @@ export class SkyMap {
 
 		const rad = (4 * this.scaleMod) / this.fovFactor;
 
-		const text = "Moon";
-		const textWidth = this.ctx.measureText(text).width;
-
 		this.drawDisk(coo, rad, color);
 		if (this.config.planets.labels.enabled) {
-			this.ctx.fillStyle = this.config.moon.label.color;
-			this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
+			const text = this.moonLabels[this.config.language];
+			if (text) {
+				const textWidth = this.ctx.measureText(text).width;
+				this.ctx.fillStyle = this.config.moon.label.color;
+				this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
+			}
 		}
 	}
 
@@ -535,13 +542,14 @@ export class SkyMap {
 
 		const rad = (size * this.scaleMod) / this.fovFactor;
 
-		const text = "Sun";
-		const textWidth = this.ctx.measureText(text).width;
-
 		this.drawDisk(coo, rad, color);
 		if (this.config.planets.labels.enabled) {
-			this.ctx.fillStyle = this.config.sun.label.color;
-			this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
+			const text = this.sunLabels[this.config.language];
+			if (text) {
+				const textWidth = this.ctx.measureText(text).width;
+				this.ctx.fillStyle = this.config.sun.label.color;
+				this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
+			}
 		}
 	}
 

@@ -42,16 +42,13 @@ const sm = new SkyMap(
 			lines: {
 				// color: "#64C8FF66",
 				labels: {
-					// enabled: false,
+					enabled: true,
 				},
 			},
 		},
-		planets: {
-			// labels: {
-			// 	enabled: false,
-			// },
-			// color: "#f0f",
-		},
+		// stars: {
+		// 	color: "#fff",
+		// },
 	},
 );
 

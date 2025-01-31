@@ -56,6 +56,7 @@ export type Config = {
 	};
 	bgColor: string;
 	fontFamily: string;
+	language: string;
 	glow: boolean;
 };
 
@@ -63,6 +64,7 @@ export const defaultConfig: Config = {
 	bgColor: "#000000",
 	glow: false,
 	fontFamily: "Arial",
+	language: "en",
 	stars: {
 		enabled: true,
 		color: undefined,
