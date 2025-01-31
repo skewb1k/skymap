@@ -8,12 +8,16 @@ import starsData from "../data/stars.6.json";
 import sunLabelsData from "../data/sun.labels.json";
 import Angle from "./Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
-import { type Config, createReactiveConfig, defaultConfig, mergeConfigs } from "./config";
+import { type Config, defaultConfig, mergeConfigs } from "./config";
 import type DeepPartial from "./helpers/DeepPartial";
 import { arcCircle, clipCircle, lineTo, moveTo } from "./helpers/canvas";
 import { bvToRGB } from "./helpers/color";
+import deepProxy from "./helpers/deepProxy";
+import easeProgress from "./helpers/easeProgress";
 import equatorialToHorizontal from "./helpers/equatorialToHorizontal";
+import lerp from "./helpers/lerp";
 import projectSphericalTo2D from "./helpers/projectSphericalTo2D";
+import { type ObserverParams, defaultObserverParams } from "./observerParams";
 import { planets } from "./planets";
 import type ConstellationBoundary from "./types/ConstellationBoundary.type";
 import type ConstellationLabel from "./types/ConstellationLabel.type";
@@ -22,29 +26,6 @@ import type Coo from "./types/Coo.type";
 import type Labels from "./types/Labels.type";
 import type PlanetsLabels from "./types/PlanetLabels.type";
 import type StarsData from "./types/StarsData.type";
-import easeProgress from "./helpers/easeProgress";
-import lerp from "./helpers/lerp";
-
-/**
- * Data used to initialize the sky map view.
- */
-type Data = {
-	/** Observer's latitude in degrees. @default 0 */
-	latitude: number;
-	/** Observer's longitude in degrees. @default 0 */
-	longitude: number;
-	/** Observer's date and time. @default new Date() */
-	datetime: Date;
-	/** Field of view (FOV) in degrees. @default 180 */
-	fov: number;
-};
-
-const defaultData: Data = {
-	latitude: 0,
-	longitude: 0,
-	datetime: new Date(),
-	fov: 180,
-};
 
 /**
  * SkyMap renders an interactive sky map on a canvas element.
@@ -98,7 +79,7 @@ export class SkyMap {
 	 * Constructs a new SkyMap instance.
 	 *
 	 * @param container - The target div element where the canvas will be appended.
-	 * @param data - Partial initialization data such as latitude, longitude, datetime, and field of view.
+	 * @param observerParams - Partial initialization data such as latitude, longitude, datetime, and field of view.
 	 * @param config - Partial configuration to customize colors, sizes, language, etc. Uses defaults for missing fields.
 	 *
 	 * @example
@@ -106,8 +87,8 @@ export class SkyMap {
 	 */
 	constructor(
 		container: HTMLDivElement,
-		data: Partial<Data> = defaultData,
-		config: DeepPartial<Config> = createReactiveConfig(defaultConfig, this.configUpdatedHandler),
+		observerParams: Partial<ObserverParams> = defaultObserverParams,
+		config: DeepPartial<Config> = deepProxy(defaultConfig, this.configUpdatedHandler),
 	) {
 		this.container = container;
 
@@ -116,22 +97,15 @@ export class SkyMap {
 		canvas.style.height = "100%";
 		canvas.style.display = "block";
 
-		this.radius = Math.min(this.container.offsetWidth, this.container.offsetHeight) / 2;
-		this.center = { x: this.radius, y: this.radius };
-		this.scaleMod = this.radius / 400;
-
-		canvas.width = this.radius * 2;
-		canvas.height = this.radius * 2;
-
 		this.canvas = canvas;
 		this.container.appendChild(canvas);
 		this.ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-		const d = { ...defaultData, ...data };
-		this.latitude = Angle.fromDegrees(d.latitude);
-		this.longitude = Angle.fromDegrees(d.longitude);
-		this.datetime = AstronomicalTime.fromUTCDate(d.datetime);
-		this.fovFactor = this.calculateFovFactor(d.fov);
+		const o = { ...defaultObserverParams, ...observerParams };
+		this.latitude = Angle.fromDegrees(o.latitude);
+		this.longitude = Angle.fromDegrees(o.longitude);
+		this.datetime = AstronomicalTime.fromUTCDate(o.datetime);
+		this.fovFactor = this.calculateFovFactor(o.fov);
 
 		this.lst = this.datetime.LST(this.longitude);
 		this.observer = this.getObserver();
@@ -148,8 +122,11 @@ export class SkyMap {
 			this.constellationsLabels.set(key, value);
 		}
 
-		this.config = createReactiveConfig(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
+		this.config = deepProxy(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
 
+		this.radius = 0;
+		this.center = { x: 0, y: 0 };
+		this.scaleMod = 0;
 		const updateCanvasSize = () => {
 			const dpr = window.devicePixelRatio || 1;
 
@@ -270,7 +247,7 @@ export class SkyMap {
 				this.latitude = Angle.fromDegrees(newLat);
 				this.longitude = Angle.fromDegrees(newLon);
 				this.observer = this.getObserver();
-				this.updateLST();
+				this.lst = this.getLST();
 				this.render();
 				callback(newLat, newLon);
 			},
@@ -299,9 +276,7 @@ export class SkyMap {
 			targetTime,
 			duration,
 			(newTime) => {
-				this.datetime = AstronomicalTime.fromUTCDate(new Date(newTime));
-				this.updateLST();
-				this.render();
+				this.setDatetime(new Date(newTime));
 				callback(new Date(newTime));
 			},
 			(newTime) => {
@@ -321,14 +296,14 @@ export class SkyMap {
 	public setLongitude(longitude: number): this {
 		this.longitude = Angle.fromDegrees(longitude);
 		this.observer = this.getObserver();
-		this.updateLST();
+		this.lst = this.getLST();
 		this.render();
 		return this;
 	}
 
 	public setDatetime(datetime: Date): this {
 		this.datetime = AstronomicalTime.fromUTCDate(datetime);
-		this.updateLST();
+		this.lst = this.getLST();
 		this.render();
 		return this;
 	}
@@ -339,8 +314,8 @@ export class SkyMap {
 		return this;
 	}
 
-	private updateLST() {
-		this.lst = this.datetime.LST(this.longitude);
+	private getLST(): Angle {
+		return this.datetime.LST(this.longitude);
 	}
 
 	private drawDisk(coo: Coo, radius: number, color: string | CanvasGradient): void {

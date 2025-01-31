@@ -107,7 +107,27 @@ export type Config = {
 	 * @default "Arial"
 	 */
 	fontFamily: string;
-	/** The language used for labels. @default "en" */
+	/**
+	 * The language used for labels.
+	 * Available languages by default:
+	 * - "en": English
+	 * - "la": Latin
+	 * - "ar": Arabic
+	 * - "zh": Chinese
+	 * - "fr": French
+	 * - "de": German
+	 * - "el": Greek
+	 * - "he": Hebrew
+	 * - "hi": Hindi
+	 * - "it": Italian
+	 * - "ja": Japanese
+	 * - "ru": Russian
+	 * - "es": Spanish
+	 * - "ko": Korean
+	 * - "fa": Persian
+	 * - "sym": Symbol (☾)
+	 * @default "en"
+	 */
 	language: string;
 	/** Toggle glow effect for stars and constellations.
 	 * Can cause performance issues.
@@ -240,37 +260,4 @@ export function mergeConfigs(cfg1: Config, cfg2: DeepPartial<Config>): Config {
 			},
 		},
 	};
-}
-
-export function createReactiveConfig(config: Config, callback: () => void): Config {
-	let configLoaded = false;
-	// Recursive Proxy handler
-	const handler = {
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		set: (target: any, prop: string | symbol, value: any): boolean => {
-			target[prop] = value;
-			if (configLoaded) {
-				callback();
-			}
-			return true;
-		},
-	};
-
-	const proxyConfig = new Proxy(config, handler);
-
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	const deepProxy = (obj: any) => {
-		if (obj && typeof obj === "object") {
-			for (const key of Object.keys(obj)) {
-				if (typeof obj[key] === "object") {
-					obj[key] = new Proxy(obj[key], handler);
-					deepProxy(obj[key]);
-				}
-			}
-		}
-	};
-
-	deepProxy(proxyConfig);
-	configLoaded = true;
-	return proxyConfig;
 }
