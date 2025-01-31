@@ -47,9 +47,9 @@ const sm = new SkyMap(
 			},
 		},
 		planets: {
-			labels: {
-				enabled: false,
-			},
+			// labels: {
+			// 	enabled: false,
+			// },
 			// color: "#f0f",
 		},
 	},

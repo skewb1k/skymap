@@ -18,6 +18,6 @@
 		}
 	},
 	"files": {
-		"ignore": ["node_modules/", "dist/", "lib/", "source/", "data/"]
+		"ignore": ["node_modules/", "dist/", "lib/", "source/", "data/", ".vscode", "**/*.json"]
 	}
 }

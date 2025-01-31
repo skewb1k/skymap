@@ -1,6 +1,5 @@
 type Planet = {
-	// id: number;
-	name: string;
+	id: string;
 	radius: number;
 	color: string;
 };

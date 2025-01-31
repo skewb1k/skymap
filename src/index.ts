@@ -2,7 +2,7 @@ import { Body, Equator, Observer } from "astronomy-engine";
 import constellationsBoundariesData from "../data/constellations.boundaries.json";
 import constellationsLabelsData from "../data/constellations.labels.json";
 import constellationsLinesData from "../data/constellations.lines.json";
-import planets from "../data/planets.json";
+import planetsLabelsData from "../data/planets.labels.json";
 import starsData from "../data/stars.6.json";
 import Angle from "./Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
@@ -16,7 +16,7 @@ import type ConstellationBoundary from "./types/ConstellationBoundary.type";
 import type ConstellationLabel from "./types/ConstellationLabel.type";
 import type ConstellationLine from "./types/ConstellationLine.type";
 import type Coo from "./types/Coo.type";
-import type Planet from "./types/Planet.type";
+import type PlanetsLabels from "./types/PlanetLabels.type";
 import type StarsData from "./types/StarsData.type";
 
 type Options = {
@@ -32,6 +32,51 @@ const defaultOptions = {
 	datetime: new Date(),
 	fov: 180,
 };
+
+const planets = [
+	{
+		id: "mer",
+		body: Body.Mercury,
+		// radiu: 3,
+		radius: 1,
+		color: "#b0b0b0",
+	},
+	{
+		id: "ven",
+		body: Body.Venus,
+		// radius: 7.5,
+		radius: 1,
+		color: "#ffffe0",
+	},
+	{
+		id: "mar",
+		body: Body.Mars,
+		// radius: 4,
+		radius: 1,
+		color: "#ff4500",
+	},
+	{
+		id: "jup",
+		body: Body.Jupiter,
+		// radius: 88,
+		radius: 4,
+		color: "#e3a869",
+	},
+	{
+		id: "sat",
+		body: Body.Saturn,
+		// radius: 32,
+		radius: 3.5,
+		color: "#66ccff",
+	},
+	{
+		id: "nep",
+		body: Body.Neptune,
+		// radius: 30,
+		radius: 2.2,
+		color: "#3366cc",
+	},
+];
 
 export class SkyMap {
 	private container: HTMLDivElement;
@@ -52,7 +97,7 @@ export class SkyMap {
 	private config: Config;
 
 	private stars: StarsData;
-	private planets: Planet[];
+	private planetLabels: PlanetsLabels;
 	private constellationsLines: ConstellationLine[];
 	private constellationsBoundaries: ConstellationBoundary[];
 	private constellationsLabels: Map<string, ConstellationLabel>;
@@ -115,7 +160,7 @@ export class SkyMap {
 		this.observer = this.getObserver();
 
 		this.stars = starsData;
-		this.planets = planets;
+		this.planetLabels = planetsLabelsData;
 		this.constellationsLines = constellationsLinesData;
 		this.constellationsBoundaries = constellationsBoundariesData;
 
@@ -410,9 +455,8 @@ export class SkyMap {
 		const fontSize = 12 * this.scaleMod;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
-		for (const planet of this.planets) {
-			const body = Body[planet.name as keyof typeof Body];
-			const equatorial = Equator(body, this.datetime.UTCDate, this.observer, true, true);
+		for (const planet of planets) {
+			const equatorial = Equator(planet.body, this.datetime.UTCDate, this.observer, true, true);
 
 			const ra = Angle.fromHours(equatorial.ra);
 			const dec = Angle.fromDegrees(equatorial.dec);
@@ -421,18 +465,21 @@ export class SkyMap {
 			const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 			const color = this.config.planets.color !== undefined ? this.config.planets.color : planet.color;
-
 			if (this.config.glow) {
 				this.ctx.shadowBlur = 10;
 				this.ctx.shadowColor = color;
 			}
 
-			const rad = (planet.radius * this.scaleMod) / this.fovFactor;
-			const textWidth = this.ctx.measureText(planet.name).width;
+			const radius = (planet.radius * this.scaleMod) / this.fovFactor;
+			this.drawDisk(coo, radius, color);
 
-			this.drawDisk(coo, rad, color);
 			if (this.config.planets.labels.enabled) {
-				this.ctx.fillText(planet.name, coo.x - textWidth / 2, coo.y - rad * 1.5);
+				const lang = "en";
+				const text = this.planetLabels[planet.id][lang];
+				if (text) {
+					const textWidth = this.ctx.measureText(text).width;
+					this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - radius - fontSize / 2);
+				}
 			}
 		}
 	}
