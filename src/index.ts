@@ -387,6 +387,8 @@ export class SkyMap {
 	}
 
 	private drawConstellationsLines(): void {
+		const fontSize = this.scaleMod * this.config.constellations.lines.labels.fontSize;
+		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 		this.ctx.strokeStyle = this.config.constellations.lines.color;
 		this.ctx.lineWidth = this.config.constellations.lines.width * this.scaleMod;
 		if (this.config.glow) {
@@ -414,9 +416,6 @@ export class SkyMap {
 			}
 
 			if (this.config.constellations.lines.labels.enabled) {
-				const fontSize = 10 * this.scaleMod * this.config.constellations.lines.labels.size;
-				this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
-
 				const constellationsLabel = this.constellationsLabels.get(constellation.id);
 				if (!constellationsLabel) throw new Error("contellation label not found");
 
@@ -432,6 +431,8 @@ export class SkyMap {
 
 					this.ctx.fillStyle = this.config.constellations.lines.labels.color;
 					this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - fontSize / 2);
+				} else {
+					throw new Error("constellation label for specified language not found");
 				}
 			}
 			this.ctx.stroke();
@@ -469,7 +470,7 @@ export class SkyMap {
 	}
 
 	private drawPlanets(): void {
-		const fontSize = 12 * this.scaleMod * this.config.planets.labels.size;
+		const fontSize = this.scaleMod * this.config.planets.labels.fontSize;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 		for (const planet of planets) {
@@ -487,7 +488,7 @@ export class SkyMap {
 				this.ctx.shadowColor = color;
 			}
 
-			const radius = (planet.radius * this.scaleMod * this.config.planets.size) / this.fovFactor;
+			const radius = (planet.radius * this.scaleMod * this.config.planets.scale) / this.fovFactor;
 			this.drawDisk(coo, radius, color);
 
 			if (this.config.planets.labels.enabled) {
@@ -495,14 +496,15 @@ export class SkyMap {
 				if (text) {
 					const textWidth = this.ctx.measureText(text).width;
 					this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - radius - fontSize / 2);
+				} else {
+					throw new Error("planet label for specified language not found");
 				}
 			}
 		}
 	}
 
 	private drawMoon(): void {
-		const size = 5;
-		const fontSize = size * 2 * this.scaleMod * this.config.moon.label.size;
+		const fontSize = this.scaleMod * this.config.moon.label.fontSize;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 		const equatorial = Equator(Body.Moon, this.datetime.UTCDate, this.observer, true, true);
@@ -519,7 +521,7 @@ export class SkyMap {
 			this.ctx.shadowColor = color;
 		}
 
-		const rad = (4 * this.scaleMod) / this.fovFactor;
+		const rad = (4 * this.scaleMod * this.config.moon.scale) / this.fovFactor;
 
 		this.drawDisk(coo, rad, color);
 		if (this.config.planets.labels.enabled) {
@@ -528,13 +530,14 @@ export class SkyMap {
 				const textWidth = this.ctx.measureText(text).width;
 				this.ctx.fillStyle = this.config.moon.label.color;
 				this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
+			} else {
+				throw new Error("moon label for specified language not found");
 			}
 		}
 	}
 
 	private drawSun(): void {
-		const size = 8;
-		const fontSize = size * 2 * this.scaleMod * this.config.sun.label.size;
+		const fontSize = this.scaleMod * this.config.sun.label.fontSize;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 		const equatorial = Equator(Body.Sun, this.datetime.UTCDate, this.observer, true, true);
@@ -551,7 +554,7 @@ export class SkyMap {
 			this.ctx.shadowColor = color;
 		}
 
-		const rad = (size * this.scaleMod) / this.fovFactor;
+		const rad = (8 * this.scaleMod) / this.fovFactor;
 
 		this.drawDisk(coo, rad, color);
 		if (this.config.planets.labels.enabled) {
@@ -560,6 +563,8 @@ export class SkyMap {
 				const textWidth = this.ctx.measureText(text).width;
 				this.ctx.fillStyle = this.config.sun.label.color;
 				this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
+			} else {
+				throw new Error("sun label for specified language not found");
 			}
 		}
 	}
@@ -581,7 +586,8 @@ export class SkyMap {
 			const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 			// star with mag = -1.44 will have size 8
-			const size = ((8 / 1.18 ** (star.mag + this.stars.mag.max)) * this.scaleMod) / this.fovFactor;
+			const size =
+				((8 / 1.18 ** (star.mag + this.stars.mag.max)) * this.scaleMod * this.config.stars.scale) / this.fovFactor;
 			const color = this.config.stars.color !== undefined ? this.config.stars.color : bvToRGB(star.bv);
 
 			if (this.config.glow) {

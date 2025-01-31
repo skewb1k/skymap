@@ -9,8 +9,8 @@ export type Config = {
 		enabled: boolean;
 		/** The color of the stars. If undefined, a default will be used. @default undefined */
 		color: string | undefined;
-		/** The size of the stars. @default 1 */
-		size: number;
+		/** A multiplier to scale default star's size. @default 1 */
+		scale: number;
 	};
 	grid: {
 		/** Whether the grid is enabled. @default true */
@@ -31,8 +31,8 @@ export type Config = {
 			labels: {
 				/** Whether labels are displayed on the constellation lines. @default true */
 				enabled: boolean;
-				/** The font size of the labels. @default 1 */
-				size: number;
+				/** The font size of the labels. @default 10 */
+				fontSize: number;
 				/** The color of the labels. @default "#fefefe" */
 				color: string;
 			};
@@ -49,16 +49,16 @@ export type Config = {
 	planets: {
 		/** Whether planets are displayed. @default true */
 		enabled: boolean;
-		/** The size of the planets. @default 1 */
-		size: number;
+		/** A multiplier to scale default planet's size. @default 1 */
+		scale: number;
 		/** The color of the planets. If undefined, a planet's color will be used. @default undefined */
 		color: string | undefined;
 		/** Labels for planets. */
 		labels: {
 			/** Whether planet labels are displayed. @default true */
 			enabled: boolean;
-			/** The font size of the labels. @default 1 */
-			size: number;
+			/** The font size in px of the planet's labels. @default 12 */
+			fontSize: number;
 			/** The color of the labels. @default "#fefefe" */
 			color: string;
 		};
@@ -66,16 +66,16 @@ export type Config = {
 	sun: {
 		/** Whether the sun is displayed. @default true */
 		enabled: boolean;
-		/** The size of the sun. @default 1 */
-		size: number;
+		/** A multiplier to scale default sun size. @default 1 */
+		scale: number;
 		/** The color of the sun. @default "#ffe484" */
 		color: string;
 		/** Sun label configuration. */
 		label: {
 			/** Whether the sun label is displayed. @default true */
 			enabled: boolean;
-			/** The font size of the sun label. @default 1 */
-			size: number;
+			/** The font size in px of the sun label. @default 16 */
+			fontSize: number;
 			/** The color of the sun label. @default "#fefefe" */
 			color: string;
 		};
@@ -83,27 +83,35 @@ export type Config = {
 	moon: {
 		/** Whether the moon is displayed. @default true */
 		enabled: boolean;
-		/** The size of the moon. @default 1 */
-		size: number;
+		/** A multiplier to scale default moon size. @default 1 */
+		scale: number;
 		/** The color of the moon. @default "#eaeaea" */
 		color: string;
 		/** Moon label configuration. */
 		label: {
 			/** Whether the moon label is displayed. @default true */
 			enabled: boolean;
-			/** The font size of the moon label. @default 1 */
-			size: number;
+			/** The font size in px of the moon label. @default 10 */
+			fontSize: number;
 			/** The color of the moon label. @default "#fefefe" */
 			color: string;
 		};
 	};
 	/** The background color of the skymap. @default "#000000" */
 	bgColor: string;
-	/** The font family used in the skymap. @default "Arial" */
+	/**
+	 * The font family used in the skymap. This should be a valid font name that is
+	 * installed on the page and available in the CSS. For example, "Arial", "Helvetica",
+	 * or any custom font loaded via `@font-face`. Ensure the specified font is accessible
+	 * in the browser to avoid fallback to a default font.
+	 * @default "Arial"
+	 */
 	fontFamily: string;
 	/** The language used for labels. @default "en" */
 	language: string;
-	/** Toggle glow effect for stars and constellations. @default false */
+	/** Toggle glow effect for stars and constellations.
+	 * Can cause performance issues.
+	 *@default false */
 	glow: boolean;
 };
 
@@ -115,7 +123,7 @@ export const defaultConfig: Config = {
 	stars: {
 		enabled: true,
 		color: undefined,
-		size: 1,
+		scale: 1,
 	},
 	grid: {
 		enabled: true,
@@ -129,7 +137,7 @@ export const defaultConfig: Config = {
 			width: 2,
 			labels: {
 				enabled: true,
-				size: 1,
+				fontSize: 10,
 				color: "#fefefe",
 			},
 		},
@@ -141,31 +149,31 @@ export const defaultConfig: Config = {
 	},
 	moon: {
 		enabled: true,
-		size: 1,
+		scale: 1,
 		color: "#eaeaea",
 		label: {
 			enabled: true,
-			size: 1,
+			fontSize: 10,
 			color: "#fefefe",
 		},
 	},
 	sun: {
 		enabled: true,
-		size: 1,
+		scale: 1,
 		color: "#ffe484",
 		label: {
 			enabled: true,
-			size: 1,
+			fontSize: 16,
 			color: "#fefefe",
 		},
 	},
 	planets: {
 		enabled: true,
-		size: 1,
+		scale: 1,
 		color: undefined,
 		labels: {
 			enabled: true,
-			size: 1,
+			fontSize: 12,
 			color: "#fefefe",
 		},
 	},

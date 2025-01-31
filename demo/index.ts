@@ -43,6 +43,7 @@ const sm = new SkyMap(
 				// color: "#64C8FF66",
 				labels: {
 					enabled: true,
+					// fontSize: 20,
 				},
 			},
 		},
