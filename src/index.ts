@@ -2,9 +2,9 @@ import { Body, Equator, Observer } from "astronomy-engine";
 import constellationsBoundariesData from "../data/constellations.boundaries.json";
 import constellationsLabelsData from "../data/constellations.labels.json";
 import constellationsLinesData from "../data/constellations.lines.json";
+import moonLabelsData from "../data/moon.labels.json";
 import planetsLabelsData from "../data/planets.labels.json";
 import starsData from "../data/stars.6.json";
-import moonLabelsData from "../data/moon.labels.json";
 import sunLabelsData from "../data/sun.labels.json";
 import Angle from "./Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
@@ -18,9 +18,9 @@ import type ConstellationBoundary from "./types/ConstellationBoundary.type";
 import type ConstellationLabel from "./types/ConstellationLabel.type";
 import type ConstellationLine from "./types/ConstellationLine.type";
 import type Coo from "./types/Coo.type";
+import type Labels from "./types/Labels.type";
 import type PlanetsLabels from "./types/PlanetLabels.type";
 import type StarsData from "./types/StarsData.type";
-import type Labels from "./types/Labels.type";
 
 type Options = {
 	latitude: number;
@@ -386,7 +386,7 @@ export class SkyMap {
 			this.ctx.shadowColor = this.config.constellations.lines.color;
 		}
 
-		this.constellationsLines.forEach((constellation) => {
+		for (const constellation of this.constellationsLines) {
 			this.ctx.beginPath();
 			for (const group of constellation.coo) {
 				for (let j = 0; j < group.length; j++) {
@@ -411,21 +411,23 @@ export class SkyMap {
 
 				const constellationsLabel = this.constellationsLabels.get(constellation.id);
 				if (!constellationsLabel) throw new Error("contellation label not found");
-				const text = constellationsLabel.labels.la;
-				const textWidth = this.ctx.measureText(text).width;
 
-				const [raDeg, decDeg] = constellationsLabel.coo;
-				const ra = Angle.fromDegrees(raDeg);
-				const dec = Angle.fromDegrees(decDeg);
+				const text = constellationsLabel.labels[this.config.language];
+				if (text) {
+					const textWidth = this.ctx.measureText(text).width;
+					const [raDeg, decDeg] = constellationsLabel.coo;
+					const ra = Angle.fromDegrees(raDeg);
+					const dec = Angle.fromDegrees(decDeg);
 
-				const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
-				const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
+					const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
+					const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-				this.ctx.fillStyle = this.config.constellations.lines.labels.color;
-				this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - fontSize / 2);
+					this.ctx.fillStyle = this.config.constellations.lines.labels.color;
+					this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - fontSize / 2);
+				}
 			}
 			this.ctx.stroke();
-		});
+		}
 	}
 
 	private drawConstellationsBoundaries(): void {
@@ -436,7 +438,7 @@ export class SkyMap {
 			this.ctx.shadowColor = this.config.constellations.boundaries.color;
 		}
 
-		this.constellationsBoundaries.forEach((constellation) => {
+		for (const constellation of this.constellationsBoundaries) {
 			this.ctx.beginPath();
 			for (const group of constellation.coo) {
 				for (let j = 0; j < group.length; j++) {
@@ -455,7 +457,7 @@ export class SkyMap {
 				}
 			}
 			this.ctx.stroke();
-		});
+		}
 	}
 
 	private drawPlanets(): void {
@@ -556,11 +558,10 @@ export class SkyMap {
 	private drawBg(): void {
 		this.ctx.fillStyle = this.config.bgColor;
 		this.ctx.fillRect(0, 0, this.radius * 2, this.radius * 2);
-		// this.drawDisk({ x: this.radius, y: this.radius }, this.radius * 1.5, this.config.bgColor);
 	}
 
 	private drawStars(): void {
-		this.stars.stars.forEach((star) => {
+		for (const star of this.stars.stars) {
 			// if (star.mag > 5.2) return;
 			const starRa = Angle.fromDegrees(star.lon);
 			const starDec = Angle.fromDegrees(star.lat);
@@ -580,7 +581,7 @@ export class SkyMap {
 			}
 
 			this.drawDisk(coo, size, color);
-		});
+		}
 	}
 
 	private drawGrid() {

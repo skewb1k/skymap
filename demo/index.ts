@@ -46,6 +46,7 @@ const sm = new SkyMap(
 				},
 			},
 		},
+		language: "ru",
 		// stars: {
 		// 	color: "#fff",
 		// },

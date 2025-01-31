@@ -68,12 +68,12 @@ describe("Greenwich Sidereal Time (GST) calculations", () => {
 			new Date("2024-01-02T12:00:00Z"),
 		];
 
-		testDates.forEach((jd) => {
+		for (const jd of testDates) {
 			const time = AstronomicalTime.fromUTCDate(jd);
 			const gst = time.GST.hours;
 			expect(gst).toBeGreaterThanOrEqual(0);
 			expect(gst).toBeLessThan(24);
-		});
+		}
 	});
 
 	test("GST changes correctly over 24-hour period", () => {
