@@ -56,7 +56,7 @@ const sm = new SkyMap(
 randomLocation.onclick = () => {
 	const lat = Math.random() * 180 - 90;
 	const lon = Math.random() * 360 - 180;
-	sm.animateLocation(lat, lon, 500, (lat, lon) => {
+	sm.updateLocationWithAnimation(lat, lon, 500, (lat, lon) => {
 		latInput.value = lat.toFixed(2);
 		latRange.value = lat.toFixed(2);
 		lonInput.value = lon.toFixed(2);
@@ -124,7 +124,7 @@ lonRange.addEventListener("input", () => {
 });
 
 dateInput.addEventListener("input", () => {
-	sm.animateDate(new Date(dateInput.value), 500, () => {});
+	sm.updateDateWithAnimation(new Date(dateInput.value), 500, () => {});
 });
 
 // Get the DPR and size of the canvas

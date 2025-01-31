@@ -21,71 +21,49 @@ import type Coo from "./types/Coo.type";
 import type Labels from "./types/Labels.type";
 import type PlanetsLabels from "./types/PlanetLabels.type";
 import type StarsData from "./types/StarsData.type";
+import { planets } from "./planets";
 
-type Options = {
+/**
+ * Data used to initialize the sky map view.
+ */
+type Data = {
+	/** Observer's latitude in degrees. @default 0 */
 	latitude: number;
+	/** Observer's longitude in degrees. @default 0 */
 	longitude: number;
+	/** Observer's date and time. @default new Date() */
 	datetime: Date;
+	/** Field of view (FOV) in degrees. @default 180 */
 	fov: number;
 };
 
-const defaultOptions = {
+const defaultData: Data = {
 	latitude: 0,
 	longitude: 0,
 	datetime: new Date(),
 	fov: 180,
 };
 
-const planets = [
-	{
-		id: "mer",
-		body: Body.Mercury,
-		// radius: 3,
-		radius: 1,
-		color: "#b0b0b0",
-	},
-	{
-		id: "ven",
-		body: Body.Venus,
-		// radius: 7.5,
-		radius: 1,
-		color: "#ffffe0",
-	},
-	{
-		id: "mar",
-		body: Body.Mars,
-		// radius: 4,
-		radius: 1,
-		color: "#ff4500",
-	},
-	{
-		id: "jup",
-		body: Body.Jupiter,
-		// radius: 88,
-		radius: 4,
-		color: "#e3a869",
-	},
-	{
-		id: "sat",
-		body: Body.Saturn,
-		// radius: 32,
-		radius: 3.5,
-		color: "#66ccff",
-	},
-	{
-		id: "nep",
-		body: Body.Neptune,
-		// radius: 30,
-		radius: 2.2,
-		color: "#3366cc",
-	},
-];
-
+/**
+ * SkyMap renders an interactive sky map on a canvas element.
+ *
+ * It calculates positions of stars, planets, the Moon, the Sun, and
+ * constellation features using astronomical formulas and renders them
+ * based on a configurable visual style.
+ *
+ * @example
+ * const container = document.getElementById("skymap-container") as HTMLDivElement;
+ * const skyMap = new SkyMap(container, { latitude: 51.5, longitude: -0.12, fov: 90 });
+ */
 export class SkyMap {
 	private container: HTMLDivElement;
 	private canvas: HTMLCanvasElement;
 	private ctx: CanvasRenderingContext2D;
 
+	/** Reactive configuration object for styling and display options. */
+	public config: Config;
+
+	/** A modifier based on canvas radius to scale drawing dimensions. */
 	private scaleMod: number;
 
 	private radius: number;
@@ -97,8 +75,7 @@ export class SkyMap {
 	private fovFactor: number;
 	private lst: Angle;
 
-	public config: Config;
-
+	// Data for drawing various objects on the sky map.
 	private stars: StarsData;
 	private planetLabels: PlanetsLabels;
 	private moonLabels: Labels;
@@ -107,13 +84,27 @@ export class SkyMap {
 	private constellationsBoundaries: ConstellationBoundary[];
 	private constellationsLabels: Map<string, ConstellationLabel>;
 
+	/**
+	 * Handler invoked whenever the configuration is updated.
+	 * Triggers a re-render of the sky map.
+	 */
 	private configUpdatedHandler = () => {
 		this.render();
 	};
 
+	/**
+	 * Constructs a new SkyMap instance.
+	 *
+	 * @param container - The target div element where the canvas will be appended.
+	 * @param data - Partial initialization data such as latitude, longitude, datetime, and field of view.
+	 * @param config - Partial configuration to customize colors, sizes, language, etc. Uses defaults for missing fields.
+	 *
+	 * @example
+	 * const skyMap = new SkyMap(container, { latitude: 40, longitude: -74, fov: 100 }, { grid: { enabled: false } });
+	 */
 	constructor(
 		container: HTMLDivElement,
-		options: Partial<Options> = defaultOptions,
+		data: Partial<Data> = defaultData,
 		config: DeepPartial<Config> = createReactiveConfig(defaultConfig, this.configUpdatedHandler),
 	) {
 		this.container = container;
@@ -158,12 +149,11 @@ export class SkyMap {
 		this.container.appendChild(canvas);
 		this.ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-		const opts = { ...defaultOptions, ...options };
-
-		this.latitude = Angle.fromDegrees(opts.latitude);
-		this.longitude = Angle.fromDegrees(opts.longitude);
-		this.datetime = AstronomicalTime.fromUTCDate(opts.datetime);
-		this.fovFactor = this.calculateFovFactor(opts.fov);
+		const d = { ...defaultData, ...data };
+		this.latitude = Angle.fromDegrees(d.latitude);
+		this.longitude = Angle.fromDegrees(d.longitude);
+		this.datetime = AstronomicalTime.fromUTCDate(d.datetime);
+		this.fovFactor = this.calculateFovFactor(d.fov);
 
 		this.lst = this.datetime.LST(this.longitude);
 		this.observer = this.getObserver();
@@ -189,6 +179,12 @@ export class SkyMap {
 		this.ctx.clip();
 	}
 
+	/**
+	 * Calculates the factor used for field-of-view projection. TODO: move out
+	 *
+	 * @param fov - Field of view in degrees.
+	 * @returns The calculated FOV factor.
+	 */
 	private calculateFovFactor(fov: number): number {
 		return Math.tan(Angle.fromDegrees(fov / 4).radians);
 	}
@@ -214,10 +210,24 @@ export class SkyMap {
 		// console.log(performance.now() - now);
 	}
 
+	/**
+	 * Linear interpolation between two numbers.
+	 *
+	 * @param start - The starting value.
+	 * @param end - The target value.
+	 * @param t - A value between 0 and 1 representing the interpolation factor.
+	 * @returns The interpolated value.
+	 */
 	private lerp(start: number, end: number, t: number): number {
 		return start + (end - start) * t;
 	}
 
+	/**
+	 * Eases a linear progress value to create smoother animations.
+	 *
+	 * @param progress - The current linear progress (between 0 and 1).
+	 * @returns The eased progress value.
+	 */
 	private easeProgress(progress: number): number {
 		return progress < 0.5 ? 2 * progress ** 2 : 1 - (-2 * progress + 2) ** 2 / 2;
 	}
@@ -261,7 +271,16 @@ export class SkyMap {
 		return this;
 	}
 
-	public animateLocation(
+	/**
+	 * Animates the change of location (latitude and longitude) over a specified duration.
+	 *
+	 * @param latitude - Target latitude in degrees.
+	 * @param longitude - Target longitude in degrees.
+	 * @param duration - Duration of the animation in milliseconds.
+	 * @param callback - Called on each frame with the updated latitude and longitude.
+	 * @returns The SkyMap instance for chaining.
+	 */
+	public updateLocationWithAnimation(
 		latitude: number,
 		longitude: number,
 		duration: number,
@@ -290,7 +309,15 @@ export class SkyMap {
 		);
 	}
 
-	public animateDate(date: Date, duration: number, callback: (date: Date) => void): this {
+	/**
+	 * Animates the change of date/time over a specified duration.
+	 *
+	 * @param date - Target Date object.
+	 * @param duration - Duration of the animation in milliseconds.
+	 * @param callback - Called on each frame with the updated Date.
+	 * @returns The SkyMap instance for chaining.
+	 */
+	public updateDateWithAnimation(date: Date, duration: number, callback: (date: Date) => void): this {
 		const startTime = this.datetime.UTCDate.getTime();
 		const targetTime = date.getTime();
 

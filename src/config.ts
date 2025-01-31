@@ -1,66 +1,109 @@
 import type DeepPartial from "./helpers/DeepPartial";
 
+/**
+ * Configuration options for the skymap.
+ */
 export type Config = {
 	stars: {
+		/** Whether stars are displayed. @default true */
 		enabled: boolean;
+		/** The color of the stars. If undefined, a default will be used. @default undefined */
 		color: string | undefined;
+		/** The size of the stars. @default 1 */
 		size: number;
 	};
 	grid: {
+		/** Whether the grid is enabled. @default true */
 		enabled: boolean;
+		/** The color of the grid lines. @default "#555" */
 		color: string;
+		/** The width of the grid lines. @default 1 */
 		width: number;
 	};
 	constellations: {
 		lines: {
+			/** Whether constellation lines are displayed. @default true */
 			enabled: boolean;
+			/** The color of the constellation lines. @default "#eaeaea" */
 			color: string;
+			/** The width of the constellation lines. @default 2 */
 			width: number;
 			labels: {
+				/** Whether labels are displayed on the constellation lines. @default true */
 				enabled: boolean;
+				/** The font size of the labels. @default 1 */
 				size: number;
+				/** The color of the labels. @default "#fefefe" */
 				color: string;
 			};
 		};
 		boundaries: {
+			/** Whether constellation boundaries are displayed. @default false */
 			enabled: boolean;
+			/** The color of the boundaries. @default "#aaa" */
 			color: string;
+			/** The width of the boundaries. @default 1 */
 			width: number;
 		};
 	};
 	planets: {
+		/** Whether planets are displayed. @default true */
 		enabled: boolean;
+		/** The size of the planets. @default 1 */
 		size: number;
+		/** The color of the planets. If undefined, a planet's color will be used. @default undefined */
 		color: string | undefined;
+		/** Labels for planets. */
 		labels: {
+			/** Whether planet labels are displayed. @default true */
 			enabled: boolean;
+			/** The font size of the labels. @default 1 */
 			size: number;
+			/** The color of the labels. @default "#fefefe" */
 			color: string;
 		};
 	};
 	sun: {
+		/** Whether the sun is displayed. @default true */
 		enabled: boolean;
+		/** The size of the sun. @default 1 */
 		size: number;
+		/** The color of the sun. @default "#ffe484" */
 		color: string;
+		/** Sun label configuration. */
 		label: {
+			/** Whether the sun label is displayed. @default true */
 			enabled: boolean;
+			/** The font size of the sun label. @default 1 */
 			size: number;
+			/** The color of the sun label. @default "#fefefe" */
 			color: string;
 		};
 	};
 	moon: {
+		/** Whether the moon is displayed. @default true */
 		enabled: boolean;
+		/** The size of the moon. @default 1 */
 		size: number;
+		/** The color of the moon. @default "#eaeaea" */
 		color: string;
+		/** Moon label configuration. */
 		label: {
+			/** Whether the moon label is displayed. @default true */
 			enabled: boolean;
+			/** The font size of the moon label. @default 1 */
 			size: number;
+			/** The color of the moon label. @default "#fefefe" */
 			color: string;
 		};
 	};
+	/** The background color of the skymap. @default "#000000" */
 	bgColor: string;
+	/** The font family used in the skymap. @default "Arial" */
 	fontFamily: string;
+	/** The language used for labels. @default "en" */
 	language: string;
+	/** Toggle glow effect for stars and constellations. @default false */
 	glow: boolean;
 };
 
