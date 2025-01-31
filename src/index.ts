@@ -22,6 +22,8 @@ import type Coo from "./types/Coo.type";
 import type Labels from "./types/Labels.type";
 import type PlanetsLabels from "./types/PlanetLabels.type";
 import type StarsData from "./types/StarsData.type";
+import easeProgress from "./helpers/easeProgress";
+import lerp from "./helpers/lerp";
 
 /**
  * Data used to initialize the sky map view.
@@ -209,28 +211,6 @@ export class SkyMap {
 		// console.log(performance.now() - now);
 	}
 
-	/**
-	 * Linear interpolation between two numbers.
-	 *
-	 * @param start - The starting value.
-	 * @param end - The target value.
-	 * @param t - A value between 0 and 1 representing the interpolation factor.
-	 * @returns The interpolated value.
-	 */
-	private lerp(start: number, end: number, t: number): number {
-		return start + (end - start) * t;
-	}
-
-	/**
-	 * Eases a linear progress value to create smoother animations.
-	 *
-	 * @param progress - The current linear progress (between 0 and 1).
-	 * @returns The eased progress value.
-	 */
-	private easeProgress(progress: number): number {
-		return progress < 0.5 ? 2 * progress ** 2 : 1 - (-2 * progress + 2) ** 2 / 2;
-	}
-
 	private animationFrameId: number | null = null;
 
 	private animate<T>(
@@ -251,7 +231,7 @@ export class SkyMap {
 		const step = (currentTime: number) => {
 			const elapsed = currentTime - startTime;
 			const progress = Math.min(elapsed / duration, 1); // Normalize to [0,1]
-			const easedProgress = this.easeProgress(progress);
+			const easedProgress = easeProgress(progress);
 			const newValue = lerp(startValue, targetValue, easedProgress);
 
 			// Update the value and render
@@ -304,7 +284,7 @@ export class SkyMap {
 				this.latitude = Angle.fromDegrees(newLat);
 				this.longitude = Angle.fromDegrees(newLon);
 			},
-			(start, end, progress) => [this.lerp(start[0], end[0], progress), this.lerp(start[1], end[1], progress)],
+			(start, end, progress) => [lerp(start[0], end[0], progress), lerp(start[1], end[1], progress)],
 		);
 	}
 
@@ -333,7 +313,7 @@ export class SkyMap {
 			(newTime) => {
 				this.datetime = AstronomicalTime.fromUTCDate(new Date(newTime));
 			},
-			(start, end, progress) => this.lerp(start, end, progress),
+			lerp,
 		);
 	}
 
@@ -612,7 +592,7 @@ export class SkyMap {
 				const dec = Angle.fromDegrees(decDeg);
 				const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
 
-				if (this.latitude.degrees > -1 && this.latitude.degrees < 1) {
+				if (Math.abs(this.latitude.degrees) < 1) {
 					if (alt.degrees < 0) {
 						continue;
 					}
