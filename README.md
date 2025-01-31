@@ -155,6 +155,5 @@ Licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
 
 ## ⭐ **Support the Project!**
 If you like **SkyMap**, consider **starring** the repo! ⭐
-👉 [GitHub: skewb1k/skymap](https://github.com/skewb1k/skymap)
 
 ### 🔭 **Enjoy exploring the stars!** 🚀✨
