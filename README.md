@@ -7,8 +7,6 @@
 <!-- [![npm version](https://img.shields.io/npm/v/@nardora/skymap)](https://www.npmjs.com/package/@nardora/skymap) -->
 [![Stars](https://img.shields.io/github/stars/skewb1k/skymap?style=social)](https://github.com/nardora/skymap)
 
----
-
 ## ✨ Features
 
 -  **Realistic Star Rendering** – Uses scientifically accurate colors and positions.
@@ -18,7 +16,6 @@
 -  **Supports Real-Time Updates** – Change time, location, and visibility dynamically.
 -  **Well-Documented** – Clear API with examples for easy integration.
 
----
 
 ## 🚀 Installation
 
@@ -33,7 +30,6 @@ pnpm add skymap
 bun add skymap
 ```
 
----
 
 ## 📌 Quick Start
 
@@ -60,7 +56,6 @@ bun add skymap
 </html>
 ```
 
----
 
 ### 🔹 **React (With Hooks)**
 ```tsx
@@ -87,7 +82,6 @@ const SkyMapComponent = () => {
 export default SkyMapComponent;
 ```
 
----
 
 ### 🔹 **Vue 3 (Composition API)**
 ```vue
@@ -138,15 +132,12 @@ sky.destroy(); // Clean up the instance
 ```
 -->
 
----
-
+<!--
 ## 📖 **Documentation & Examples**
 📚 **Full API Documentation:** [nardora.github.io/skymap](https://nardora.github.io/skymap) (TODO)
 
 🛠 **Live Demos:** [CodeSandbox](https://codesandbox.io/) (TODO)
 
----
-<!--
 ## 👥 **Contributing**
 Contributions are welcome! Please follow these steps:
 1. **Fork the repo** and clone it.
@@ -158,15 +149,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ---
 -->
+
 ## 📜 **License**
 Licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
-
----
 
 ## ⭐ **Support the Project!**
 If you like **SkyMap**, consider **starring** the repo! ⭐
 👉 [GitHub: skewb1k/skymap](https://github.com/skewb1k/skymap)
-
----
 
 ### 🔭 **Enjoy exploring the stars!** 🚀✨
