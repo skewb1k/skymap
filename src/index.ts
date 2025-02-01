@@ -167,19 +167,19 @@ export class SkyMap {
 
 		try {
 			instance.stars = await fetchJson<StarsData>(
-				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/stars.6.json",
+				"https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/stars.6.json",
 			);
 
 			instance.constellationsBoundaries = await fetchJson<ConstellationBoundary[]>(
-				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/constellations.boundaries.json",
+				"https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.boundaries.json",
 			);
 
 			instance.constellationsLines = await fetchJson<ConstellationLine[]>(
-				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/constellations.lines.json",
+				"https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.lines.json",
 			);
 
 			instance.constellationsLabels = await fetchJson<(ConstellationLabel & { id: string })[]>(
-				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/constellations.labels.json",
+				"https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.labels.json",
 			).then((data) => {
 				const labels = new Map<string, ConstellationLabel>();
 				for (const label of data) {
@@ -189,18 +189,18 @@ export class SkyMap {
 			});
 
 			instance.planetLabels = await fetchJson<PlanetsLabels>(
-				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/planets.labels.json",
+				"https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/planets.labels.json",
 			);
 
 			instance.moonLabels = await fetchJson<Labels>(
-				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/moon.labels.json",
+				"https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/moon.labels.json",
 			);
 
 			instance.sunLabels = await fetchJson<Labels>(
-				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/sun.labels.json",
+				"https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/sun.labels.json",
 			);
 		} catch (error) {
-			console.error("Failed to load stars data:", error);
+			console.error("Failed to load data:", error);
 			throw error; // Rethrow so the caller can handle it
 		}
 
