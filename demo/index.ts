@@ -1,4 +1,5 @@
-import { SkyMap } from "../src/index";
+// @ts-ignore
+import { SkyMap } from "../src/SkyMap/SkyMap";
 
 const latRange = document.querySelector("#latitude-range") as HTMLInputElement;
 const latInput = document.querySelector("#latitude-input") as HTMLInputElement;
