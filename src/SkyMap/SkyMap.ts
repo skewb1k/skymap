@@ -177,22 +177,13 @@ export class SkyMap {
 				moonLabels,
 				sunLabels,
 			] = await Promise.all([
-				// todo: make configurable
-				fetchJson<StarsData>("https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/stars.6.json"),
-				fetchJson<ConstellationBoundary[]>(
-					"https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.boundaries.json",
-				),
-				fetchJson<ConstellationLine[]>(
-					"https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.lines.json",
-				),
-				fetchJson<(ConstellationLabel & { id: string })[]>(
-					"https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.labels.json",
-				),
-				fetchJson<PlanetsLabels>(
-					"https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/planets.labels.json",
-				),
-				fetchJson<Labels>("https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/moon.labels.json"),
-				fetchJson<Labels>("https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/sun.labels.json"),
+				fetchJson<StarsData>(instance.config.stars.data),
+				fetchJson<ConstellationBoundary[]>(instance.config.constellations.boundaries.data),
+				fetchJson<ConstellationLine[]>(instance.config.constellations.lines.data),
+				fetchJson<(ConstellationLabel & { id: string })[]>(instance.config.constellations.lines.labels.data),
+				fetchJson<PlanetsLabels>(instance.config.planets.labels.data),
+				fetchJson<Labels>(instance.config.moon.label.data),
+				fetchJson<Labels>(instance.config.sun.label.data),
 			]);
 
 			// Process constellation labels into a Map
@@ -211,12 +202,13 @@ export class SkyMap {
 			instance.sunLabels = sunLabels;
 		} catch (error) {
 			console.error("Failed to load data:", error);
-			throw error; // Rethrow so the caller can handle it
+			throw error;
 		}
 
 		instance.resizeHandler();
 		return instance;
 	}
+
 	/**
 	 * Updates both the observer's latitude and longitude.
 	 *

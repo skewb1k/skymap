@@ -11,6 +11,8 @@ export type Config = {
 		color: string | undefined;
 		/** A multiplier to scale default star's size. @default 1 */
 		scale: number;
+		/** URI to the JSON file containing star data. @default "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/stars.6.json" */
+		data: string;
 	};
 	grid: {
 		/** Whether the grid is enabled. @default true */
@@ -35,7 +37,11 @@ export type Config = {
 				fontSize: number;
 				/** The color of the labels. @default "#fefefe" */
 				color: string;
+				/** URI to the JSON file containing constellations labels data. @default "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.labels.json" */
+				data: string;
 			};
+			/** URI to the JSON file containing constellations lines data. @default "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.lines.json" */
+			data: string;
 		};
 		boundaries: {
 			/** Whether constellation boundaries are displayed. @default false */
@@ -44,6 +50,8 @@ export type Config = {
 			color: string;
 			/** The width of the boundaries. @default 1 */
 			width: number;
+			/** URI to the JSON file containing constellations boundaries data. @default "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.boundaries.json" */
+			data: string;
 		};
 	};
 	planets: {
@@ -61,6 +69,8 @@ export type Config = {
 			fontSize: number;
 			/** The color of the labels. @default "#fefefe" */
 			color: string;
+			/** URI to the JSON file containing planets labels data. @default "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/planets.labels.json" */
+			data: string;
 		};
 	};
 	sun: {
@@ -78,6 +88,8 @@ export type Config = {
 			fontSize: number;
 			/** The color of the sun label. @default "#fefefe" */
 			color: string;
+			/** URI to the JSON file containing sun labels data. @default "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/sun.labels.json" */
+			data: string;
 		};
 	};
 	moon: {
@@ -95,6 +107,8 @@ export type Config = {
 			fontSize: number;
 			/** The color of the moon label. @default "#fefefe" */
 			color: string;
+			/** URI to the JSON file containing moon labels data. @default "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/moon.labels.json" */
+			data: string;
 		};
 	};
 	/** The background color of the skymap. @default "#000000" */
@@ -144,6 +158,7 @@ export const defaultConfig: Config = {
 		enabled: true,
 		color: undefined,
 		scale: 1,
+		data: "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/stars.6.json",
 	},
 	grid: {
 		enabled: true,
@@ -159,12 +174,15 @@ export const defaultConfig: Config = {
 				enabled: true,
 				fontSize: 10,
 				color: "#fefefe",
+				data: "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.labels.json",
 			},
+			data: "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.lines.json",
 		},
 		boundaries: {
 			enabled: false,
 			color: "#aaa",
 			width: 1,
+			data: "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/constellations.boundaries.json",
 		},
 	},
 	moon: {
@@ -175,6 +193,7 @@ export const defaultConfig: Config = {
 			enabled: true,
 			fontSize: 10,
 			color: "#fefefe",
+			data: "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/moon.labels.json",
 		},
 	},
 	sun: {
@@ -185,6 +204,7 @@ export const defaultConfig: Config = {
 			enabled: true,
 			fontSize: 16,
 			color: "#fefefe",
+			data: "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/sun.labels.json",
 		},
 	},
 	planets: {
@@ -195,6 +215,7 @@ export const defaultConfig: Config = {
 			enabled: true,
 			fontSize: 12,
 			color: "#fefefe",
+			data: "https://raw.githubusercontent.com/skewb1k/skymap/refs/heads/main/data/planets.labels.json",
 		},
 	},
 };

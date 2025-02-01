@@ -4,7 +4,7 @@
 
 🚀 **Designed for simplicity, customization, and performance.**
 
-<!-- [![npm version](https://img.shields.io/npm/v/skewb1k/skymap)](https://www.npmjs.com/package/@skewb1k/skymap) -->
+[![npm version](https://img.shields.io/npm/v/skymap)](https://www.npmjs.com/package/skymap)
 [![Stars](https://img.shields.io/github/stars/skewb1k/skymap?style=social)](https://github.com/skewb1k/skymap)
 
 ## ✨ Features
@@ -30,42 +30,43 @@ pnpm add skymap
 bun add skymap
 ```
 
-
 ## 📌 Quick Start
 
 ### 🔹 **Vanilla JavaScript (Plain HTML)**
 ```html
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <title>Sky Map</title>
+    <meta charset="UTF-8">
+    <title>Sky Map</title>
 </head>
+
 <body>
-  <div id="sky-container" style="width: 500px; height: 500px;"></div>
-  <script type="module">
-    import { SkyMap } from "skymap";
+    <div id="sky-container" style="width: 500px; height: 500px;"></div>
+    <script type="module">
+        import SkyMap from "skymap";
 
-    const container = document.getElementById("sky-container")
-
-	  const skymap = await SkyMap.create(
-	  		container,
-	  		{
-	  			date: new Date("2023-01-01T12:00:00Z"),
-	  		},
-	  		{
-	  			bgColor: "#0a0d13",
-	  			constellations: {
-	  				lines: {
-	  					labels: {
-	  						enabled: false,
-	  					},
-	  				},
-	  			},
-	  		},
-	  );
-  </script>
+        const container = document.getElementById("sky-container");
+        const skymap = await SkyMap.create(
+            container,
+            {
+                date: new Date("2023-01-01T12:00:00Z"),
+            },
+            {
+                bgColor: "#0a0d13",
+                constellations: {
+                    lines: {
+                        labels: {
+                            enabled: false,
+                        },
+                    },
+                },
+            }
+        );
+    </script>
 </body>
+
 </html>
 ```
 

@@ -1,6 +1,6 @@
 {
 	"name": "skymap",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Interactive Sky Map library for canvas",
 	"type": "module",
 	"main": "dist/index.js",
@@ -30,7 +30,8 @@
 		"format": "biome check --write .",
 		"lint": "biome check .",
 		"test": "bun test",
-		"coverage": "bun test --coverage"
+		"coverage": "bun test --coverage",
+		"publish":"bun run build && npm publish"
 	},
 	"dependencies": {
 		"astronomy-engine": "^2.1.19"
