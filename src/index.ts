@@ -4,11 +4,12 @@ import constellationsLabelsData from "../data/constellations.labels.json";
 import constellationsLinesData from "../data/constellations.lines.json";
 import moonLabelsData from "../data/moon.labels.json";
 import planetsLabelsData from "../data/planets.labels.json";
-import starsData from "../data/stars.6.json";
+// import starsData from "../data/stars.6.json";
 import sunLabelsData from "../data/sun.labels.json";
 import Angle from "./Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
 import { type Config, defaultConfig, mergeConfigs } from "./config";
+import { loadStarsData } from "./data";
 import type DeepPartial from "./helpers/DeepPartial";
 import { arcCircle, clipCircle, lineTo, moveTo } from "./helpers/canvas";
 import { bvToRGB } from "./helpers/color";
@@ -37,7 +38,7 @@ import type StarsData from "./types/StarsData.type";
  *
  * @example
  * const container = document.getElementById("skymap-container") as HTMLDivElement;
- * const skyMap = new SkyMap(container, { latitude: 51.5, longitude: -0.12, fov: 90 });
+ * const skyMap = new SkyMap(container, { latitude: 51.5, longitude: -0.12 });
  */
 export class SkyMap {
 	private container: HTMLDivElement;
@@ -60,7 +61,7 @@ export class SkyMap {
 	private lst: Angle;
 
 	// Data for drawing various objects on the sky map.
-	private stars: StarsData;
+	private stars: StarsData | undefined;
 	private planetLabels: PlanetsLabels;
 	private moonLabels: Labels;
 	private sunLabels: Labels;
@@ -76,17 +77,27 @@ export class SkyMap {
 		this.render();
 	};
 
-	/**
-	 * Constructs a new SkyMap instance.
-	 *
-	 * @param container - The target div element where the canvas will be appended.
-	 * @param observerParams - Observer parameters for location and time.
-	 * @param config - Configuration to customize colors, sizes, language, etc. Uses defaults for missing fields.
-	 *
-	 * @example
-	 * const skyMap = new SkyMap(container, { latitude: 40, longitude: -74, fov: 100 }, { grid: { enabled: false } });
-	 */
-	constructor(
+	private resizeHandler = () => {
+		const dpr = window.devicePixelRatio || 1;
+
+		// Get the actual size of the container
+		const width = this.container.clientWidth;
+		const height = this.container.clientHeight;
+
+		// Set canvas dimensions for high resolution rendering
+		this.canvas.width = width * dpr;
+		this.canvas.height = height * dpr;
+
+		this.radius = Math.min(width, height) / 2;
+		this.center = { x: this.radius, y: this.radius };
+		this.scaleMod = this.radius / 400;
+
+		// Scale the context to match the DPR
+		this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		this.render();
+	};
+
+	private constructor(
 		container: HTMLDivElement,
 		observerParams: Partial<ObserverParams> = defaultObserverParams,
 		config: DeepPartial<Config> = deepProxy(defaultConfig, this.configUpdatedHandler),
@@ -111,7 +122,6 @@ export class SkyMap {
 		this.lst = this.date.LST(this.longitude);
 		this.observer = this.getObserver();
 
-		this.stars = starsData;
 		this.planetLabels = planetsLabelsData;
 		this.moonLabels = moonLabelsData;
 		this.sunLabels = sunLabelsData;
@@ -128,28 +138,50 @@ export class SkyMap {
 		this.radius = 0;
 		this.center = { x: 0, y: 0 };
 		this.scaleMod = 0;
-		const updateCanvasSize = () => {
-			const dpr = window.devicePixelRatio || 1;
+		window.addEventListener("resize", this.resizeHandler);
+	}
 
-			// Get the actual size of the container
-			const width = container.clientWidth;
-			const height = container.clientHeight;
+	/**
+	 * Asynchronous factory method to create an instance of SkyMap.
+	 *
+	 * @param container - The target div element where the canvas will be appended.
+	 * @param observerParams - Observer parameters for location and time.
+	 * @param config - Configuration to customize colors, sizes, language, etc. Uses defaults for missing fields.
+	 * @throws An error if data loading fails.
+	 * @example
+	 * const skymap = await SkyMap.create(
+	 * 		container,
+	 * 		{
+	 * 			date: new Date("2023-01-01T12:00:00Z"),
+	 * 		},
+	 * 		{
+	 * 			bgColor: "#0a0d13",
+	 * 			constellations: {
+	 * 				lines: {
+	 * 					labels: {
+	 * 						enabled: false,
+	 * 					},
+	 * 				},
+	 * 			},
+	 * 		},
+	 * );
+	 */
+	static async create(
+		container: HTMLDivElement,
+		observerParams: Partial<ObserverParams> = defaultObserverParams,
+		config: DeepPartial<Config> = defaultConfig,
+	): Promise<SkyMap> {
+		const instance = new SkyMap(container, observerParams, config);
 
-			// Set canvas dimensions for high resolution rendering
-			canvas.width = width * dpr;
-			canvas.height = height * dpr;
+		try {
+			instance.stars = await loadStarsData(); // Load stars data
+		} catch (error) {
+			console.error("Failed to load stars data:", error);
+			throw error; // Rethrow so the caller can handle it
+		}
 
-			this.radius = Math.min(width, height) / 2;
-			this.center = { x: this.radius, y: this.radius };
-			this.scaleMod = this.radius / 400;
-
-			// Scale the context to match the DPR
-			this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-			this.render();
-		};
-
-		window.addEventListener("resize", updateCanvasSize);
-		updateCanvasSize();
+		instance.resizeHandler();
+		return instance;
 	}
 
 	/**
@@ -572,6 +604,7 @@ export class SkyMap {
 
 	private drawStars(): void {
 		if (!this.config.stars.enabled) return;
+		if (!this.stars) throw new Error("stars not loaded");
 		for (const star of this.stars.stars) {
 			// if (star.mag > 5.2) return;
 			const starRa = Angle.fromDegrees(star.lon);

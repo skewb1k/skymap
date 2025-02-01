@@ -26,8 +26,7 @@ const minutes = String(now.getMinutes()).padStart(2, "0");
 dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
 
 const container = document.querySelector("#container") as HTMLDivElement;
-
-const sm = new SkyMap(
+const skymap = await SkyMap.create(
 	container,
 	{
 		latitude: Number(latInput.value),
@@ -57,7 +56,7 @@ const sm = new SkyMap(
 randomLocation.onclick = () => {
 	const lat = Math.random() * 180 - 90;
 	const lon = Math.random() * 360 - 180;
-	sm.setLocationWithAnimation(lat, lon, 500, (lat, lon) => {
+	skymap.setLocationWithAnimation(lat, lon, 500, (lat, lon) => {
 		latInput.value = lat.toFixed(2);
 		latRange.value = lat.toFixed(2);
 		lonInput.value = lon.toFixed(2);
@@ -72,60 +71,60 @@ randomTime.onclick = () => {
 			new Date(year, 1, 1).getTime(),
 	);
 	dateInput.value = date.toISOString().slice(0, 16);
-	sm.setDate(date);
+	skymap.setDate(date);
 	// sm.animateDate(date, 10000, (date) => {
 	// 	dateInput.value = date.toISOString().slice(0, 16);
 	// });
 };
 
 gridCheckbox.addEventListener("change", () => {
-	sm.config.grid.enabled = gridCheckbox.checked;
+	skymap.config.grid.enabled = gridCheckbox.checked;
 });
 
 starsCheckbox.addEventListener("change", () => {
-	sm.config.stars.enabled = starsCheckbox.checked;
+	skymap.config.stars.enabled = starsCheckbox.checked;
 });
 
 constellationsLinesCheckbox.addEventListener("change", () => {
-	sm.config.constellations.lines.enabled = constellationsLinesCheckbox.checked;
+	skymap.config.constellations.lines.enabled = constellationsLinesCheckbox.checked;
 });
 
 constellationsBoundariesCheckbox.addEventListener("change", () => {
-	sm.config.constellations.boundaries.enabled = constellationsBoundariesCheckbox.checked;
+	skymap.config.constellations.boundaries.enabled = constellationsBoundariesCheckbox.checked;
 });
 
 fovRange.addEventListener("input", () => {
-	sm.setFov(Number(fovRange.value));
+	skymap.setFov(Number(fovRange.value));
 	fovInput.value = fovRange.value;
 });
 
 fovInput.addEventListener("input", () => {
-	sm.setFov(Number(fovInput.value));
+	skymap.setFov(Number(fovInput.value));
 	fovRange.value = fovInput.value;
 });
 
 latRange.addEventListener("input", () => {
-	sm.setLatitude(Number(latRange.value));
+	skymap.setLatitude(Number(latRange.value));
 	latInput.value = latRange.value;
 });
 
 latInput.addEventListener("input", () => {
-	sm.setLatitude(Number(latInput.value));
+	skymap.setLatitude(Number(latInput.value));
 	latRange.value = latInput.value;
 });
 
 lonInput.addEventListener("input", () => {
-	sm.setLongitude(Number(lonInput.value));
+	skymap.setLongitude(Number(lonInput.value));
 	lonRange.value = lonInput.value;
 });
 
 lonRange.addEventListener("input", () => {
-	sm.setLongitude(Number(lonRange.value));
+	skymap.setLongitude(Number(lonRange.value));
 	lonInput.value = lonRange.value;
 });
 
 dateInput.addEventListener("input", () => {
-	sm.setDateWithAnimation(new Date(dateInput.value), 500, () => {});
+	skymap.setDateWithAnimation(new Date(dateInput.value), 500, () => {});
 });
 
 // Get the DPR and size of the canvas
