@@ -4,8 +4,8 @@
 
 🚀 **Designed for simplicity, customization, and performance.**
 
-<!-- [![npm version](https://img.shields.io/npm/v/@nardora/skymap)](https://www.npmjs.com/package/@nardora/skymap) -->
-[![Stars](https://img.shields.io/github/stars/skewb1k/skymap?style=social)](https://github.com/nardora/skymap)
+<!-- [![npm version](https://img.shields.io/npm/v/skewb1k/skymap)](https://www.npmjs.com/package/@skewb1k/skymap) -->
+[![Stars](https://img.shields.io/github/stars/skewb1k/skymap?style=social)](https://github.com/skewb1k/skymap)
 
 ## ✨ Features
 
@@ -46,17 +46,30 @@ bun add skymap
   <script type="module">
     import { SkyMap } from "skymap";
 
-    const sky = new SkyMap(document.getElementById("sky-container"), {
-      latitude: 52.52,
-      longitude: 13.405,
-      datetime: new Date(),
-    });
+    const container = document.getElementById("sky-container")
+
+	  const skymap = await SkyMap.create(
+	  		container,
+	  		{
+	  			date: new Date("2023-01-01T12:00:00Z"),
+	  		},
+	  		{
+	  			bgColor: "#0a0d13",
+	  			constellations: {
+	  				lines: {
+	  					labels: {
+	  						enabled: false,
+	  					},
+	  				},
+	  			},
+	  		},
+	  );
   </script>
 </body>
 </html>
 ```
 
-
+<!--
 ### 🔹 **React (With Hooks)**
 ```tsx
 import { useEffect, useRef } from "react";
@@ -103,7 +116,7 @@ onMounted(() => {
   });
 });
 </script>
-```
+``` -->
 <!--
 ---
 
