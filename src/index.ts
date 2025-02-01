@@ -26,6 +26,7 @@ import type Coo from "./types/Coo.type";
 import type Labels from "./types/Labels.type";
 import type PlanetsLabels from "./types/PlanetLabels.type";
 import type StarsData from "./types/StarsData.type";
+import getFovFactor from "./helpers/getFovFactor";
 
 /**
  * SkyMap renders an interactive sky map on a canvas element.
@@ -105,7 +106,7 @@ export class SkyMap {
 		this.latitude = Angle.fromDegrees(o.latitude);
 		this.longitude = Angle.fromDegrees(o.longitude);
 		this.datetime = AstronomicalTime.fromUTCDate(o.datetime);
-		this.fovFactor = this.calculateFovFactor(o.fov);
+		this.fovFactor = getFovFactor(o.fov);
 
 		this.lst = this.datetime.LST(this.longitude);
 		this.observer = this.getObserver();
@@ -149,16 +150,6 @@ export class SkyMap {
 
 		window.addEventListener("resize", updateCanvasSize);
 		updateCanvasSize();
-	}
-
-	/**
-	 * Calculates the factor used for field-of-view projection. TODO: move out
-	 *
-	 * @param fov - Field of view in degrees.
-	 * @returns The calculated FOV factor.
-	 */
-	private calculateFovFactor(fov: number): number {
-		return Math.tan(Angle.fromDegrees(fov / 4).radians);
 	}
 
 	private getObserver(): Observer {
@@ -309,7 +300,7 @@ export class SkyMap {
 	}
 
 	public setFov(fov: number): this {
-		this.fovFactor = this.calculateFovFactor(fov);
+		this.fovFactor = getFovFactor(fov);
 		this.render();
 		return this;
 	}
