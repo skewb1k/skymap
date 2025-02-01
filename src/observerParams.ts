@@ -1,5 +1,5 @@
 /**
- * Data used to initialize the sky map view.
+ * Params used to define an observer.
  */
 export type ObserverParams = {
 	/** Observer's latitude in degrees. @default 0 */
@@ -7,7 +7,7 @@ export type ObserverParams = {
 	/** Observer's longitude in degrees. @default 0 */
 	longitude: number;
 	/** Observer's date and time. @default new Date() */
-	datetime: Date;
+	date: Date;
 	/** Field of view (FOV) in degrees. @default 180 */
 	fov: number;
 };
@@ -15,6 +15,6 @@ export type ObserverParams = {
 export const defaultObserverParams: ObserverParams = {
 	latitude: 0,
 	longitude: 0,
-	datetime: new Date(),
+	date: new Date(),
 	fov: 180,
 };

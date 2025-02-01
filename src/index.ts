@@ -15,6 +15,7 @@ import { bvToRGB } from "./helpers/color";
 import deepProxy from "./helpers/deepProxy";
 import easeProgress from "./helpers/easeProgress";
 import equatorialToHorizontal from "./helpers/equatorialToHorizontal";
+import getFovFactor from "./helpers/getFovFactor";
 import lerp from "./helpers/lerp";
 import projectSphericalTo2D from "./helpers/projectSphericalTo2D";
 import { type ObserverParams, defaultObserverParams } from "./observerParams";
@@ -26,7 +27,6 @@ import type Coo from "./types/Coo.type";
 import type Labels from "./types/Labels.type";
 import type PlanetsLabels from "./types/PlanetLabels.type";
 import type StarsData from "./types/StarsData.type";
-import getFovFactor from "./helpers/getFovFactor";
 
 /**
  * SkyMap renders an interactive sky map on a canvas element.
@@ -54,7 +54,7 @@ export class SkyMap {
 	private center: Coo;
 	private latitude: Angle;
 	private longitude: Angle;
-	private datetime: AstronomicalTime;
+	private date: AstronomicalTime;
 	private observer: Observer;
 	private fovFactor: number;
 	private lst: Angle;
@@ -80,8 +80,8 @@ export class SkyMap {
 	 * Constructs a new SkyMap instance.
 	 *
 	 * @param container - The target div element where the canvas will be appended.
-	 * @param observerParams - Partial initialization data such as latitude, longitude, datetime, and field of view.
-	 * @param config - Partial configuration to customize colors, sizes, language, etc. Uses defaults for missing fields.
+	 * @param observerParams - Observer parameters for location and time.
+	 * @param config - Configuration to customize colors, sizes, language, etc. Uses defaults for missing fields.
 	 *
 	 * @example
 	 * const skyMap = new SkyMap(container, { latitude: 40, longitude: -74, fov: 100 }, { grid: { enabled: false } });
@@ -105,10 +105,10 @@ export class SkyMap {
 		const o = { ...defaultObserverParams, ...observerParams };
 		this.latitude = Angle.fromDegrees(o.latitude);
 		this.longitude = Angle.fromDegrees(o.longitude);
-		this.datetime = AstronomicalTime.fromUTCDate(o.datetime);
+		this.date = AstronomicalTime.fromUTCDate(o.date);
 		this.fovFactor = getFovFactor(o.fov);
 
-		this.lst = this.datetime.LST(this.longitude);
+		this.lst = this.date.LST(this.longitude);
 		this.observer = this.getObserver();
 
 		this.stars = starsData;
@@ -152,25 +152,93 @@ export class SkyMap {
 		updateCanvasSize();
 	}
 
-	private getObserver(): Observer {
-		return new Observer(this.latitude.degrees, this.longitude.degrees, 0);
+	/**
+	 * Updates both the observer's latitude and longitude.
+	 *
+	 * @param latitude - The new latitude in degrees.
+	 * @param longitude - The new longitude in degrees.
+	 * @returns The SkyMap instance for chaining.
+	 */
+	public setLocation(latitude: number, longitude: number): this {
+		this.latitude = Angle.fromDegrees(latitude);
+		this.longitude = Angle.fromDegrees(longitude);
+		this.observer = this.getObserver();
+		this.lst = this.getLST();
+		this.render();
+		return this;
 	}
 
-	private render(): void {
-		// const now = performance.now();
-		clipCircle(this.ctx, this.center, this.radius);
-		this.drawBg();
+	/**
+	 * Updates the observer's latitude.
+	 *
+	 * @param latitude - The new latitude in degrees.
+	 * @returns The SkyMap instance for chaining.
+	 */
+	public setLatitude(latitude: number): this {
+		this.latitude = Angle.fromDegrees(latitude);
+		this.observer = this.getObserver();
+		this.render();
+		return this;
+	}
 
-		this.drawGrid();
-		this.drawConstellationsLines();
-		this.drawConstellationsBoundaries();
-		this.drawStars();
-		this.drawPlanets();
-		this.drawSun();
-		this.drawMoon();
+	/**
+	 * Updates the observer's longitude.
+	 *
+	 * @param longitude - The new longitude in degrees.
+	 * @returns The SkyMap instance for chaining.
+	 */
+	public setLongitude(longitude: number): this {
+		this.longitude = Angle.fromDegrees(longitude);
+		this.observer = this.getObserver();
+		this.lst = this.getLST();
+		this.render();
+		return this;
+	}
 
-		this.drawBorder();
-		// console.log(performance.now() - now);
+	/**
+	 * Updates the sky map's date/time.
+	 *
+	 * @param date - The new date/time for astronomical calculations.
+	 * @returns The SkyMap instance for chaining.
+	 */
+	public setDate(date: Date): this {
+		this.date = AstronomicalTime.fromUTCDate(date);
+		this.lst = this.getLST();
+		this.render();
+		return this;
+	}
+
+	/**
+	 * Updates the field of view (FOV).
+	 *
+	 * @param fov - The new field of view in degrees.
+	 * @returns The SkyMap instance for chaining.
+	 */
+	public setFov(fov: number): this {
+		this.fovFactor = getFovFactor(fov);
+		this.render();
+		return this;
+	}
+
+	/**
+	 * Replaces the current observer parameters with the given ones.
+	 *
+	 * @param observerParams - An object containing the new observer parameters:
+	 *   - `latitude`: The new latitude in degrees.
+	 *   - `longitude`: The new longitude in degrees.
+	 *   - `date`: The new date/time for astronomical calculations.
+	 *   - `fov`: The new field of view in degrees.
+	 * @returns The SkyMap instance for chaining.
+	 */
+	public setObserverParams(observerParams: ObserverParams): this {
+		this.latitude = Angle.fromDegrees(observerParams.latitude);
+		this.longitude = Angle.fromDegrees(observerParams.longitude);
+		this.observer = this.getObserver();
+		this.date = AstronomicalTime.fromUTCDate(observerParams.date);
+		this.lst = this.getLST();
+		this.fovFactor = getFovFactor(observerParams.fov);
+		this.render();
+		return this;
 	}
 
 	private animationFrameId: number | null = null;
@@ -215,13 +283,12 @@ export class SkyMap {
 	/**
 	 * Animates the change of location (latitude and longitude) over a specified duration.
 	 *
-	 * @param latitude - Target latitude in degrees.
-	 * @param longitude - Target longitude in degrees.
+	 * @param latitude - The new latitude in degrees.
+	 * @param longitude - The new longitude in degrees.
 	 * @param duration - Duration of the animation in milliseconds.
-	 * @param callback - Called on each frame with the updated latitude and longitude.
 	 * @returns The SkyMap instance for chaining.
 	 */
-	public updateLocationWithAnimation(
+	public setLocationWithAnimation(
 		latitude: number,
 		longitude: number,
 		duration: number,
@@ -253,13 +320,12 @@ export class SkyMap {
 	/**
 	 * Animates the change of date/time over a specified duration.
 	 *
-	 * @param date - Target Date object.
+	 * @param date - The new date/time for astronomical calculations.
 	 * @param duration - Duration of the animation in milliseconds.
-	 * @param callback - Called on each frame with the updated Date.
 	 * @returns The SkyMap instance for chaining.
 	 */
-	public updateDateWithAnimation(date: Date, duration: number, callback: (date: Date) => void): this {
-		const startTime = this.datetime.UTCDate.getTime();
+	public setDateWithAnimation(date: Date, duration: number, callback: (date: Date) => void): this {
+		const startTime = this.date.UTCDate.getTime();
 		const targetTime = date.getTime();
 
 		return this.animate<number>(
@@ -267,46 +333,31 @@ export class SkyMap {
 			targetTime,
 			duration,
 			(newTime) => {
-				this.setDatetime(new Date(newTime));
+				this.setDate(new Date(newTime));
 				callback(new Date(newTime));
 			},
 			(newTime) => {
-				this.datetime = AstronomicalTime.fromUTCDate(new Date(newTime));
+				this.date = AstronomicalTime.fromUTCDate(new Date(newTime));
 			},
 			lerp,
 		);
 	}
 
-	public setLatitude(latitude: number): this {
-		this.latitude = Angle.fromDegrees(latitude);
-		this.observer = this.getObserver();
-		this.render();
-		return this;
-	}
+	private render(): void {
+		// const now = performance.now();
+		clipCircle(this.ctx, this.center, this.radius);
+		this.drawBg();
 
-	public setLongitude(longitude: number): this {
-		this.longitude = Angle.fromDegrees(longitude);
-		this.observer = this.getObserver();
-		this.lst = this.getLST();
-		this.render();
-		return this;
-	}
+		this.drawGrid();
+		this.drawConstellationsLines();
+		this.drawConstellationsBoundaries();
+		this.drawStars();
+		this.drawPlanets();
+		this.drawSun();
+		this.drawMoon();
 
-	public setDatetime(datetime: Date): this {
-		this.datetime = AstronomicalTime.fromUTCDate(datetime);
-		this.lst = this.getLST();
-		this.render();
-		return this;
-	}
-
-	public setFov(fov: number): this {
-		this.fovFactor = getFovFactor(fov);
-		this.render();
-		return this;
-	}
-
-	private getLST(): Angle {
-		return this.datetime.LST(this.longitude);
+		this.drawBorder();
+		// console.log(performance.now() - now);
 	}
 
 	private drawDisk(coo: Coo, radius: number, color: string | CanvasGradient): void {
@@ -417,7 +468,7 @@ export class SkyMap {
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
 		for (const planet of planets) {
-			const equatorial = Equator(planet.body, this.datetime.UTCDate, this.observer, true, true);
+			const equatorial = Equator(planet.body, this.date.UTCDate, this.observer, true, true);
 
 			const ra = Angle.fromHours(equatorial.ra);
 			const dec = Angle.fromDegrees(equatorial.dec);
@@ -451,7 +502,7 @@ export class SkyMap {
 		const fontSize = this.scaleMod * this.config.moon.label.fontSize;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
-		const equatorial = Equator(Body.Moon, this.datetime.UTCDate, this.observer, true, true);
+		const equatorial = Equator(Body.Moon, this.date.UTCDate, this.observer, true, true);
 
 		const ra = Angle.fromHours(equatorial.ra);
 		const dec = Angle.fromDegrees(equatorial.dec);
@@ -485,7 +536,7 @@ export class SkyMap {
 		const fontSize = this.scaleMod * this.config.sun.label.fontSize;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 
-		const equatorial = Equator(Body.Sun, this.datetime.UTCDate, this.observer, true, true);
+		const equatorial = Equator(Body.Sun, this.date.UTCDate, this.observer, true, true);
 
 		const ra = Angle.fromHours(equatorial.ra);
 		const dec = Angle.fromDegrees(equatorial.dec);
@@ -602,5 +653,13 @@ export class SkyMap {
 			}
 		}
 		this.ctx.stroke();
+	}
+
+	private getObserver(): Observer {
+		return new Observer(this.latitude.degrees, this.longitude.degrees, 0);
+	}
+
+	private getLST(): Angle {
+		return this.date.LST(this.longitude);
 	}
 }

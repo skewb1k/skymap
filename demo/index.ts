@@ -32,7 +32,7 @@ const sm = new SkyMap(
 	{
 		latitude: Number(latInput.value),
 		longitude: Number(lonInput.value),
-		datetime: new Date(dateInput.value),
+		date: new Date(dateInput.value),
 	},
 	{
 		bgColor: "#0a0d13",
@@ -57,7 +57,7 @@ const sm = new SkyMap(
 randomLocation.onclick = () => {
 	const lat = Math.random() * 180 - 90;
 	const lon = Math.random() * 360 - 180;
-	sm.updateLocationWithAnimation(lat, lon, 500, (lat, lon) => {
+	sm.setLocationWithAnimation(lat, lon, 500, (lat, lon) => {
 		latInput.value = lat.toFixed(2);
 		latRange.value = lat.toFixed(2);
 		lonInput.value = lon.toFixed(2);
@@ -72,7 +72,7 @@ randomTime.onclick = () => {
 			new Date(year, 1, 1).getTime(),
 	);
 	dateInput.value = date.toISOString().slice(0, 16);
-	sm.setDatetime(date);
+	sm.setDate(date);
 	// sm.animateDate(date, 10000, (date) => {
 	// 	dateInput.value = date.toISOString().slice(0, 16);
 	// });
@@ -125,7 +125,7 @@ lonRange.addEventListener("input", () => {
 });
 
 dateInput.addEventListener("input", () => {
-	sm.updateDateWithAnimation(new Date(dateInput.value), 500, () => {});
+	sm.setDateWithAnimation(new Date(dateInput.value), 500, () => {});
 });
 
 // Get the DPR and size of the canvas

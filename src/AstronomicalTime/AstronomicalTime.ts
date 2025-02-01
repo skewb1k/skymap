@@ -26,7 +26,7 @@ export default class AstronomicalTime {
 	 * Converts the current date to Julian Date (JD).
 	 * @returns The Julian Date (JD).
 	 */
-	public julianDate(): number {
+	get julianDate(): number {
 		if (this.julianDateCache === undefined) {
 			const year = this.date.getUTCFullYear();
 			const month = this.date.getUTCMonth() + 1; // JavaScript months are 0-based
@@ -57,11 +57,11 @@ export default class AstronomicalTime {
 	 * Calculates the Greenwich Sidereal Time (GST) in hours.
 	 * @returns The GST in hours (range: 0–24).
 	 */
-	public get GST(): Angle {
+	get GST(): Angle {
 		if (this.gstCache === undefined) {
-			const d = this.julianDate() - 2451545.0; // Days since J2000.0
+			const d = this.julianDate - 2451545.0; // Days since J2000.0
 			const gmstInDegrees = 280.46061837 + 360.98564736629 * d;
-			this.gstCache = Angle.fromDegrees(gmstInDegrees);
+			this.gstCache = Angle.fromDegrees(gmstInDegrees).normalize();
 		}
 		return this.gstCache;
 	}
@@ -72,6 +72,6 @@ export default class AstronomicalTime {
 	 * @returns The Local Sidereal Time (LST) in degrees.
 	 */
 	public LST(longitude: Angle): Angle {
-		return this.GST.add(longitude);
+		return this.GST.add(longitude).normalize();
 	}
 }
