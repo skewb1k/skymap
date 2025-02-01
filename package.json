@@ -10,10 +10,12 @@
 		"import": "./dist/index.js",
 		"require": "./dist/index.cjs"
 	},
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/skewb1k/skymap.git"
+		"url": "git+https://github.com/skewb1k/skymap.git"
 	},
 	"bugs": {
 		"url": "https://github.com/skewb1k/skymap/issues"
