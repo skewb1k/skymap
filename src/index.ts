@@ -1,15 +1,12 @@
 import { Body, Equator, Observer } from "astronomy-engine";
-import constellationsBoundariesData from "../data/constellations.boundaries.json";
-import constellationsLabelsData from "../data/constellations.labels.json";
-import constellationsLinesData from "../data/constellations.lines.json";
-import moonLabelsData from "../data/moon.labels.json";
-import planetsLabelsData from "../data/planets.labels.json";
-// import starsData from "../data/stars.6.json";
-import sunLabelsData from "../data/sun.labels.json";
+// import constellationsLabelsData from "../data/constellations.labels.json";
+// import constellationsLinesData from "../data/constellations.lines.json";
+// import moonLabelsData from "../data/moon.labels.json";
+// import planetsLabelsData from "../data/planets.labels.json";
+// import sunLabelsData from "../data/sun.labels.json";
 import Angle from "./Angle/Angle";
 import AstronomicalTime from "./AstronomicalTime/AstronomicalTime";
 import { type Config, defaultConfig, mergeConfigs } from "./config";
-import { loadStarsData } from "./data";
 import type DeepPartial from "./helpers/DeepPartial";
 import { arcCircle, clipCircle, lineTo, moveTo } from "./helpers/canvas";
 import { bvToRGB } from "./helpers/color";
@@ -28,6 +25,7 @@ import type Coo from "./types/Coo.type";
 import type Labels from "./types/Labels.type";
 import type PlanetsLabels from "./types/PlanetLabels.type";
 import type StarsData from "./types/StarsData.type";
+import fetchJson from "./helpers/fetchJson";
 
 /**
  * SkyMap renders an interactive sky map on a canvas element.
@@ -62,12 +60,12 @@ export class SkyMap {
 
 	// Data for drawing various objects on the sky map.
 	private stars: StarsData | undefined;
-	private planetLabels: PlanetsLabels;
-	private moonLabels: Labels;
-	private sunLabels: Labels;
-	private constellationsLines: ConstellationLine[];
-	private constellationsBoundaries: ConstellationBoundary[];
-	private constellationsLabels: Map<string, ConstellationLabel>;
+	private planetLabels: PlanetsLabels | undefined;
+	private moonLabels: Labels | undefined;
+	private sunLabels: Labels | undefined;
+	private constellationsLines: ConstellationLine[] | undefined;
+	private constellationsBoundaries: ConstellationBoundary[] | undefined;
+	private constellationsLabels: Map<string, ConstellationLabel> | undefined;
 
 	/**
 	 * Handler invoked whenever the configuration is updated.
@@ -122,16 +120,10 @@ export class SkyMap {
 		this.lst = this.date.LST(this.longitude);
 		this.observer = this.getObserver();
 
-		this.planetLabels = planetsLabelsData;
-		this.moonLabels = moonLabelsData;
-		this.sunLabels = sunLabelsData;
-		this.constellationsLines = constellationsLinesData;
-		this.constellationsBoundaries = constellationsBoundariesData;
-
-		this.constellationsLabels = new Map();
-		for (const [key, value] of Object.entries(constellationsLabelsData)) {
-			this.constellationsLabels.set(key, value);
-		}
+		// this.constellationsLabels = new Map();
+		// for (const [key, value] of Object.entries(constellationsLabelsData)) {
+		// 	this.constellationsLabels.set(key, value);
+		// }
 
 		this.config = deepProxy(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
 
@@ -174,7 +166,39 @@ export class SkyMap {
 		const instance = new SkyMap(container, observerParams, config);
 
 		try {
-			instance.stars = await loadStarsData(); // Load stars data
+			instance.stars = await fetchJson<StarsData>(
+				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/stars.6.json",
+			);
+
+			instance.constellationsBoundaries = await fetchJson<ConstellationBoundary[]>(
+				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/constellations.boundaries.json",
+			);
+
+			instance.constellationsLines = await fetchJson<ConstellationLine[]>(
+				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/constellations.lines.json",
+			);
+
+			instance.constellationsLabels = await fetchJson<(ConstellationLabel & { id: string })[]>(
+				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/constellations.labels.json",
+			).then((data) => {
+				const labels = new Map<string, ConstellationLabel>();
+				for (const label of data) {
+					labels.set(label.id, { coo: label.coo, labels: label.labels });
+				}
+				return labels;
+			});
+
+			instance.planetLabels = await fetchJson<PlanetsLabels>(
+				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/planets.labels.json",
+			);
+
+			instance.moonLabels = await fetchJson<Labels>(
+				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/moon.labels.json",
+			);
+
+			instance.sunLabels = await fetchJson<Labels>(
+				"https://raw.githubusercontent.com/skewb1k/skymap/main/data/sun.labels.json",
+			);
 		} catch (error) {
 			console.error("Failed to load stars data:", error);
 			throw error; // Rethrow so the caller can handle it
@@ -183,7 +207,6 @@ export class SkyMap {
 		instance.resizeHandler();
 		return instance;
 	}
-
 	/**
 	 * Updates both the observer's latitude and longitude.
 	 *
@@ -411,6 +434,8 @@ export class SkyMap {
 
 	private drawConstellationsLines(): void {
 		if (!this.config.constellations.lines.enabled) return;
+		if (!this.constellationsLines) throw new Error("constellations lines not loaded");
+
 		const fontSize = this.scaleMod * this.config.constellations.lines.labels.fontSize;
 		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
 		this.ctx.strokeStyle = this.config.constellations.lines.color;
@@ -440,6 +465,7 @@ export class SkyMap {
 			}
 
 			if (this.config.constellations.lines.labels.enabled) {
+				if (!this.constellationsLabels) throw new Error("contellations labels not loaded");
 				const constellationsLabel = this.constellationsLabels.get(constellation.id);
 				if (!constellationsLabel) throw new Error("contellation label not found");
 
@@ -465,6 +491,7 @@ export class SkyMap {
 
 	private drawConstellationsBoundaries(): void {
 		if (!this.config.constellations.boundaries.enabled) return;
+		if (!this.constellationsBoundaries) throw new Error("constellations boundaries not loaded");
 		this.ctx.strokeStyle = this.config.constellations.boundaries.color;
 		this.ctx.lineWidth = this.config.constellations.boundaries.width * this.scaleMod;
 		if (this.config.glow) {
@@ -518,6 +545,7 @@ export class SkyMap {
 			this.drawDisk(coo, radius, color);
 
 			if (this.config.planets.labels.enabled) {
+				if (!this.planetLabels) throw new Error("planet labels not loaded");
 				const text = this.planetLabels[planet.id][this.config.language];
 				if (text) {
 					const textWidth = this.ctx.measureText(text).width;
@@ -552,6 +580,7 @@ export class SkyMap {
 
 		this.drawDisk(coo, rad, color);
 		if (this.config.planets.labels.enabled) {
+			if (!this.moonLabels) throw new Error("moon labels not loaded");
 			const text = this.moonLabels[this.config.language];
 			if (text) {
 				const textWidth = this.ctx.measureText(text).width;
@@ -586,6 +615,7 @@ export class SkyMap {
 
 		this.drawDisk(coo, rad, color);
 		if (this.config.planets.labels.enabled) {
+			if (!this.sunLabels) throw new Error("sun labels not loaded");
 			const text = this.sunLabels[this.config.language];
 			if (text) {
 				const textWidth = this.ctx.measureText(text).width;
@@ -605,6 +635,7 @@ export class SkyMap {
 	private drawStars(): void {
 		if (!this.config.stars.enabled) return;
 		if (!this.stars) throw new Error("stars not loaded");
+
 		for (const star of this.stars.stars) {
 			// if (star.mag > 5.2) return;
 			const starRa = Angle.fromDegrees(star.lon);
