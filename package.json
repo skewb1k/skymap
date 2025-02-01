@@ -24,14 +24,13 @@
 	"license": "MIT",
 	"author": "skewb1k",
 	"scripts": {
-		"dev": "bun typecheck && vite",
+		"demo": "bun typecheck && vite",
 		"build": "bun typecheck && tsup",
 		"typecheck": "tsc --noEmit",
 		"format": "biome check --write .",
 		"lint": "biome check .",
 		"test": "bun test",
-		"coverage": "bun test --coverage",
-		"prepublishOnly": "npm run build"
+		"coverage": "bun test --coverage"
 	},
 	"dependencies": {
 		"astronomy-engine": "^2.1.19"

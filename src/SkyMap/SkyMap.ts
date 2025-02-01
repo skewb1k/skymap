@@ -348,13 +348,14 @@ export class SkyMap {
 	 * @param latitude - The new latitude in degrees.
 	 * @param longitude - The new longitude in degrees.
 	 * @param duration - Duration of the animation in milliseconds.
+	 * @param stepCallback - Callback function to be called on each animation step.
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLocationWithAnimation(
 		latitude: number,
 		longitude: number,
 		duration: number,
-		callback: (latitude: number, longitude: number) => void,
+		stepCallback?: (latitude: number, longitude: number) => void,
 	): this {
 		const startLat = this.latitude.degrees;
 		const startLon = this.longitude.degrees;
@@ -369,7 +370,9 @@ export class SkyMap {
 				this.observer = this.getObserver();
 				this.lst = this.getLST();
 				this.render();
-				callback(newLat, newLon);
+				if (stepCallback !== undefined) {
+					stepCallback(newLat, newLon);
+				}
 			},
 			([newLat, newLon]) => {
 				this.latitude = Angle.fromDegrees(newLat);
@@ -384,9 +387,10 @@ export class SkyMap {
 	 *
 	 * @param date - The new date/time for astronomical calculations.
 	 * @param duration - Duration of the animation in milliseconds.
+	 * @param stepCallback - Callback function to be called on each animation step.
 	 * @returns The SkyMap instance for chaining.
 	 */
-	public setDateWithAnimation(date: Date, duration: number, callback: (date: Date) => void): this {
+	public setDateWithAnimation(date: Date, duration: number, stepCallback?: (date: Date) => void): this {
 		const startTime = this.date.UTCDate.getTime();
 		const targetTime = date.getTime();
 
@@ -396,7 +400,9 @@ export class SkyMap {
 			duration,
 			(newTime) => {
 				this.setDate(new Date(newTime));
-				callback(new Date(newTime));
+				if (stepCallback !== undefined) {
+					stepCallback(new Date(newTime));
+				}
 			},
 			(newTime) => {
 				this.date = AstronomicalTime.fromUTCDate(new Date(newTime));
@@ -405,7 +411,10 @@ export class SkyMap {
 		);
 	}
 
-	private render(): void {
+	/**
+	 * Renders the whole map.
+	 */
+	public render(): void {
 		// const now = performance.now();
 		clipCircle(this.ctx, this.center, this.radius);
 		this.drawBg();
@@ -617,10 +626,10 @@ export class SkyMap {
 			this.ctx.shadowBlur = 10;
 			this.ctx.shadowColor = color;
 		}
-
-		const rad = (8 * this.scaleMod) / this.fovFactor;
+		const rad = (8 * this.scaleMod * this.config.sun.scale) / this.fovFactor;
 
 		this.drawDisk(coo, rad, color);
+
 		if (this.config.planets.labels.enabled) {
 			if (!this.sunLabels) throw new Error("sun labels not loaded");
 			const text = this.sunLabels[this.config.language];
