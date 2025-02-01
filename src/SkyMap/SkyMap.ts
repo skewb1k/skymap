@@ -76,23 +76,10 @@ export class SkyMap {
 	};
 
 	private resizeHandler = () => {
-		const dpr = window.devicePixelRatio || 1;
-
-		// Get the actual size of the container
 		const width = this.container.clientWidth;
 		const height = this.container.clientHeight;
 
-		// Set canvas dimensions for high resolution rendering
-		this.canvas.width = width * dpr;
-		this.canvas.height = height * dpr;
-
-		this.radius = Math.min(width, height) / 2;
-		this.center = { x: this.radius, y: this.radius };
-		this.scaleMod = this.radius / 400;
-
-		// Scale the context to match the DPR
-		this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-		this.render();
+		this.resize(width, height);
 	};
 
 	private constructor(
@@ -120,17 +107,33 @@ export class SkyMap {
 		this.lst = this.date.LST(this.longitude);
 		this.observer = this.getObserver();
 
-		// this.constellationsLabels = new Map();
-		// for (const [key, value] of Object.entries(constellationsLabelsData)) {
-		// 	this.constellationsLabels.set(key, value);
-		// }
-
 		this.config = deepProxy(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
 
 		this.radius = 0;
 		this.center = { x: 0, y: 0 };
 		this.scaleMod = 0;
 		window.addEventListener("resize", this.resizeHandler);
+	}
+
+	/**
+	 * Resizes the canvas to the specified width and height, adjusting for device pixel ratio (DPR).
+	 * This ensures the canvas remains sharp on high-DPI displays. Rerenders after
+	 *
+	 * @param width - The new width of the canvas in pixels.
+	 * @param height - The new height of the canvas in pixels.
+	 */
+	public resize(width: number, height: number): void {
+		const dpr = window.devicePixelRatio || 1;
+
+		this.canvas.width = width * dpr;
+		this.canvas.height = height * dpr;
+
+		this.radius = Math.min(width, height) / 2;
+		this.center = { x: this.radius, y: this.radius };
+		this.scaleMod = this.radius / 400;
+
+		this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		this.render();
 	}
 
 	/**
