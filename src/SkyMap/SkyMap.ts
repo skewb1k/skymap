@@ -116,24 +116,33 @@ export class SkyMap {
 	}
 
 	/**
-	 * Resizes the canvas to the specified width and height, adjusting for device pixel ratio (DPR).
-	 * This ensures the canvas remains sharp on high-DPI displays. Rerenders after
+	 * Resizes the canvas while maintaining proper device pixel ratio (DPR) scaling.
+	 * Automatically adjusts for high-DPI displays and triggers a rerender.
 	 *
-	 * @param width - The new width of the canvas in pixels.
-	 * @param height - The new height of the canvas in pixels.
+	 * @overload
+	 * @param size - The size in pixels for both width and height to create a square canvas
+	 *
+	 * @overload
+	 * @param width - The width of the canvas in pixels
+	 * @param height - The height of the canvas in pixels
 	 */
-	public resize(width: number, height: number): void {
-		const dpr = window.devicePixelRatio || 1;
-
-		this.canvas.width = width * dpr;
-		this.canvas.height = height * dpr;
-
-		this.radius = Math.min(width, height) / 2;
-		this.center = { x: this.radius, y: this.radius };
-		this.scaleMod = this.radius / 400;
-
-		this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-		this.render();
+	public resize(size: number): void;
+	public resize(width: number, height: number): void;
+	public resize(widthOrSize: number, height?: number): void {
+		if (height === undefined) {
+			// Square resize when only one parameter is provided
+			this.resize(widthOrSize, widthOrSize);
+		} else {
+			// Original resize logic
+			const dpr = window.devicePixelRatio || 1;
+			this.canvas.width = widthOrSize * dpr;
+			this.canvas.height = height * dpr;
+			this.radius = Math.min(widthOrSize, height) / 2;
+			this.center = { x: this.radius, y: this.radius };
+			this.scaleMod = this.radius / 400;
+			this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+			this.render();
+		}
 	}
 
 	/**
