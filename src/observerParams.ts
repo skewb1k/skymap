@@ -18,3 +18,19 @@ export const defaultObserverParams: ObserverParams = {
 	date: new Date(),
 	fov: 180,
 };
+
+export function validateLatitude(value: number): boolean {
+	return value >= -90 && value <= 90;
+}
+
+export function validateLongitude(value: number): boolean {
+	return value >= -180 && value <= 180;
+}
+
+export function validateFov(value: number): boolean {
+	return value >= 0 && value <= 360;
+}
+
+export function validateObserverParams(params: ObserverParams): boolean {
+	return validateLatitude(params.latitude) && validateLongitude(params.longitude) && validateFov(params.fov);
+}

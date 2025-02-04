@@ -1,4 +1,5 @@
 import { Body, Equator, Observer } from "astronomy-engine";
+import cloneDeep from "lodash.clonedeep";
 import Angle from "../Angle/Angle";
 import AstronomicalTime from "../AstronomicalTime/AstronomicalTime";
 import { type Config, defaultConfig, mergeConfigs } from "../config";
@@ -12,7 +13,14 @@ import fetchJson from "../helpers/fetchJson";
 import getFovFactor from "../helpers/getFovFactor";
 import lerp from "../helpers/lerp";
 import projectSphericalTo2D from "../helpers/projectSphericalTo2D";
-import { type ObserverParams, defaultObserverParams } from "../observerParams";
+import {
+	type ObserverParams,
+	defaultObserverParams,
+	validateFov,
+	validateLatitude,
+	validateLongitude,
+	validateObserverParams,
+} from "../observerParams";
 import { planets } from "../planets";
 import type ConstellationBoundary from "../types/ConstellationBoundary.type";
 import type ConstellationLabel from "../types/ConstellationLabel.type";
@@ -21,7 +29,6 @@ import type Coo from "../types/Coo.type";
 import type Labels from "../types/Labels.type";
 import type PlanetsLabels from "../types/PlanetLabels.type";
 import type StarsData from "../types/StarsData.type";
-import cloneDeep from "lodash.clonedeep";
 
 /**
  * SkyMap renders an interactive sky map on a canvas element.
@@ -86,6 +93,11 @@ export class SkyMap {
 		config: DeepPartial<Config> = deepProxy(defaultConfig, this.configUpdatedHandler),
 	) {
 		this.container = container;
+		this.observerParams = { ...defaultObserverParams, ...observerParams };
+		this.config = deepProxy(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
+		if (!validateObserverParams(this.observerParams)) {
+			throw new Error("Invalid observer parameters.");
+		}
 
 		const canvas = document.createElement("canvas");
 		canvas.style.width = "100%";
@@ -96,7 +108,6 @@ export class SkyMap {
 		this.container.appendChild(canvas);
 		this.ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-		this.observerParams = { ...defaultObserverParams, ...observerParams };
 		this.latitude = Angle.fromDegrees(this.observerParams.latitude);
 		this.longitude = Angle.fromDegrees(this.observerParams.longitude);
 		this.date = AstronomicalTime.fromUTCDate(this.observerParams.date);
@@ -104,8 +115,6 @@ export class SkyMap {
 
 		this.lst = this.date.LST(this.longitude);
 		this.observer = this.getObserver();
-
-		this.config = deepProxy(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
 
 		this.radius = 0;
 		this.center = { x: 0, y: 0 };
@@ -157,6 +166,10 @@ export class SkyMap {
 	 *
 	 * @param container - The target div element where the canvas will be appended.
 	 * @param observerParams - Observer parameters for location and time.
+	 *   - `latitude`: The new latitude in degrees.
+	 *   - `longitude`: The new longitude in degrees.
+	 *   - `date`: The new date/time for astronomical calculations.
+	 *   - `fov`: The new field of view in degrees.
 	 * @param config - Configuration to customize colors, sizes, language, etc. Uses defaults for missing fields.
 	 * @throws An error if data loading fails.
 	 * @example
@@ -183,43 +196,38 @@ export class SkyMap {
 		config: DeepPartial<Config> = defaultConfig,
 	): Promise<SkyMap> {
 		const instance = new SkyMap(container, observerParams, config);
-		try {
-			const [
-				stars,
-				constellationsBoundaries,
-				constellationsLines,
-				constellationsLabelsRaw,
-				planetLabels,
-				moonLabels,
-				sunLabels,
-			] = await Promise.all([
-				fetchJson<StarsData>(instance.config.stars.data),
-				fetchJson<ConstellationBoundary[]>(instance.config.constellations.boundaries.data),
-				fetchJson<ConstellationLine[]>(instance.config.constellations.lines.data),
-				fetchJson<(ConstellationLabel & { id: string })[]>(instance.config.constellations.lines.labels.data),
-				fetchJson<PlanetsLabels>(instance.config.planets.labels.data),
-				fetchJson<Labels>(instance.config.moon.label.data),
-				fetchJson<Labels>(instance.config.sun.label.data),
-			]);
+		const [
+			stars,
+			constellationsBoundaries,
+			constellationsLines,
+			constellationsLabelsRaw,
+			planetLabels,
+			moonLabels,
+			sunLabels,
+		] = await Promise.all([
+			fetchJson<StarsData>(instance.config.stars.data),
+			fetchJson<ConstellationBoundary[]>(instance.config.constellations.boundaries.data),
+			fetchJson<ConstellationLine[]>(instance.config.constellations.lines.data),
+			fetchJson<(ConstellationLabel & { id: string })[]>(instance.config.constellations.lines.labels.data),
+			fetchJson<PlanetsLabels>(instance.config.planets.labels.data),
+			fetchJson<Labels>(instance.config.moon.label.data),
+			fetchJson<Labels>(instance.config.sun.label.data),
+		]);
 
-			// Process constellation labels into a Map
-			const constellationsLabels = new Map<string, ConstellationLabel>();
-			for (const label of constellationsLabelsRaw) {
-				constellationsLabels.set(label.id, { coo: label.coo, labels: label.labels });
-			}
-
-			// Assign values to the instance
-			instance.stars = stars;
-			instance.constellationsBoundaries = constellationsBoundaries;
-			instance.constellationsLines = constellationsLines;
-			instance.constellationsLabels = constellationsLabels;
-			instance.planetLabels = planetLabels;
-			instance.moonLabels = moonLabels;
-			instance.sunLabels = sunLabels;
-		} catch (error) {
-			console.error("Failed to load data:", error);
-			throw error;
+		// Process constellation labels into a Map
+		const constellationsLabels = new Map<string, ConstellationLabel>();
+		for (const label of constellationsLabelsRaw) {
+			constellationsLabels.set(label.id, { coo: label.coo, labels: label.labels });
 		}
+
+		// Assign values to the instance
+		instance.stars = stars;
+		instance.constellationsBoundaries = constellationsBoundaries;
+		instance.constellationsLines = constellationsLines;
+		instance.constellationsLabels = constellationsLabels;
+		instance.planetLabels = planetLabels;
+		instance.moonLabels = moonLabels;
+		instance.sunLabels = sunLabels;
 
 		instance.resizeHandler();
 		return instance;
@@ -233,6 +241,10 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLocation(latitude: number, longitude: number): this {
+		if (!validateLatitude(latitude) || !validateLongitude(longitude)) {
+			throw new Error("Invalid latitude or longitude value");
+		}
+
 		this.updateLatitude(latitude);
 		this.updateLongitude(longitude);
 		this.render();
@@ -246,6 +258,10 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLatitude(latitude: number): this {
+		if (!validateLatitude(latitude)) {
+			throw new Error("Invalid latitude value");
+		}
+
 		this.updateLatitude(latitude);
 		this.render();
 		return this;
@@ -258,6 +274,10 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLongitude(longitude: number): this {
+		if (!validateLongitude(longitude)) {
+			throw new Error("Invalid longitude value");
+		}
+
 		this.updateLongitude(longitude);
 		this.render();
 		return this;
@@ -282,6 +302,10 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setFov(fov: number): this {
+		if (!validateFov(fov)) {
+			throw new Error("Invalid fov value");
+		}
+
 		this.updateFov(fov);
 		this.render();
 		return this;
@@ -298,6 +322,10 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setObserverParams(observerParams: ObserverParams): this {
+		if (!validateObserverParams(observerParams)) {
+			throw new Error("Invalid observer parameters");
+		}
+
 		this.observerParams = observerParams;
 		this.updateLatitude(observerParams.latitude);
 		this.updateLongitude(observerParams.longitude);
@@ -359,6 +387,10 @@ export class SkyMap {
 		duration: number,
 		stepCallback?: (latitude: number, longitude: number) => void,
 	): this {
+		if (!validateLatitude(latitude) || !validateLongitude(longitude)) {
+			throw new Error("Invalid latitude or longitude value");
+		}
+
 		const startLat = this.latitude.degrees;
 		const startLon = this.longitude.degrees;
 
