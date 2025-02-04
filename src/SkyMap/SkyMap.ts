@@ -1,9 +1,4 @@
 import { Body, Equator, Observer } from "astronomy-engine";
-// import constellationsLabelsData from "../data/constellations.labels.json";
-// import constellationsLinesData from "../data/constellations.lines.json";
-// import moonLabelsData from "../data/moon.labels.json";
-// import planetsLabelsData from "../data/planets.labels.json";
-// import sunLabelsData from "../data/sun.labels.json";
 import Angle from "../Angle/Angle";
 import AstronomicalTime from "../AstronomicalTime/AstronomicalTime";
 import { type Config, defaultConfig, mergeConfigs } from "../config";
@@ -26,6 +21,7 @@ import type Coo from "../types/Coo.type";
 import type Labels from "../types/Labels.type";
 import type PlanetsLabels from "../types/PlanetLabels.type";
 import type StarsData from "../types/StarsData.type";
+import cloneDeep from "lodash.clonedeep";
 
 /**
  * SkyMap renders an interactive sky map on a canvas element.
@@ -45,6 +41,8 @@ export class SkyMap {
 
 	/** Reactive configuration object for styling and display options. */
 	public config: Config;
+
+	private observerParams: ObserverParams;
 
 	/** A modifier based on canvas radius to scale drawing dimensions. */
 	private scaleMod: number;
@@ -98,11 +96,11 @@ export class SkyMap {
 		this.container.appendChild(canvas);
 		this.ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-		const o = { ...defaultObserverParams, ...observerParams };
-		this.latitude = Angle.fromDegrees(o.latitude);
-		this.longitude = Angle.fromDegrees(o.longitude);
-		this.date = AstronomicalTime.fromUTCDate(o.date);
-		this.fovFactor = getFovFactor(o.fov);
+		this.observerParams = { ...defaultObserverParams, ...observerParams };
+		this.latitude = Angle.fromDegrees(this.observerParams.latitude);
+		this.longitude = Angle.fromDegrees(this.observerParams.longitude);
+		this.date = AstronomicalTime.fromUTCDate(this.observerParams.date);
+		this.fovFactor = getFovFactor(this.observerParams.fov);
 
 		this.lst = this.date.LST(this.longitude);
 		this.observer = this.getObserver();
@@ -116,15 +114,24 @@ export class SkyMap {
 	}
 
 	/**
+	 * Clones this SkyMap instance, creating a new instance with the same configuration for another container.
+	 *
+	 * @param container - The target div element where the canvas will be appended.
+	 * @returns The SkyMap instance.
+	 */
+	public async clone(container: HTMLDivElement): Promise<SkyMap> {
+		return SkyMap.create(container, cloneDeep(this.observerParams), cloneDeep(this.config));
+	}
+
+	/**
 	 * Resizes the canvas while maintaining proper device pixel ratio (DPR) scaling.
-	 * Automatically adjusts for high-DPI displays and triggers a rerender.
 	 *
 	 * @overload
-	 * @param size - The size in pixels for both width and height to create a square canvas
+	 * @param size - The size in pixels for both width and height to create a square canvas.
 	 *
 	 * @overload
-	 * @param width - The width of the canvas in pixels
-	 * @param height - The height of the canvas in pixels
+	 * @param width - The width of the canvas in pixels.
+	 * @param height - The height of the canvas in pixels.
 	 */
 	public resize(size: number): void;
 	public resize(width: number, height: number): void;
@@ -226,10 +233,8 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLocation(latitude: number, longitude: number): this {
-		this.latitude = Angle.fromDegrees(latitude);
-		this.longitude = Angle.fromDegrees(longitude);
-		this.observer = this.getObserver();
-		this.lst = this.getLST();
+		this.updateLatitude(latitude);
+		this.updateLongitude(longitude);
 		this.render();
 		return this;
 	}
@@ -241,8 +246,7 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLatitude(latitude: number): this {
-		this.latitude = Angle.fromDegrees(latitude);
-		this.observer = this.getObserver();
+		this.updateLatitude(latitude);
 		this.render();
 		return this;
 	}
@@ -254,9 +258,7 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLongitude(longitude: number): this {
-		this.longitude = Angle.fromDegrees(longitude);
-		this.observer = this.getObserver();
-		this.lst = this.getLST();
+		this.updateLongitude(longitude);
 		this.render();
 		return this;
 	}
@@ -268,8 +270,7 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setDate(date: Date): this {
-		this.date = AstronomicalTime.fromUTCDate(date);
-		this.lst = this.getLST();
+		this.updateDate(date);
 		this.render();
 		return this;
 	}
@@ -281,7 +282,7 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setFov(fov: number): this {
-		this.fovFactor = getFovFactor(fov);
+		this.updateFov(fov);
 		this.render();
 		return this;
 	}
@@ -297,12 +298,11 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setObserverParams(observerParams: ObserverParams): this {
-		this.latitude = Angle.fromDegrees(observerParams.latitude);
-		this.longitude = Angle.fromDegrees(observerParams.longitude);
-		this.observer = this.getObserver();
-		this.date = AstronomicalTime.fromUTCDate(observerParams.date);
-		this.lst = this.getLST();
-		this.fovFactor = getFovFactor(observerParams.fov);
+		this.observerParams = observerParams;
+		this.updateLatitude(observerParams.latitude);
+		this.updateLongitude(observerParams.longitude);
+		this.updateDate(observerParams.date);
+		this.updateFov(observerParams.fov);
 		this.render();
 		return this;
 	}
@@ -313,7 +313,6 @@ export class SkyMap {
 		startValue: T,
 		targetValue: T,
 		duration: number,
-		callback: (value: T) => void,
 		update: (value: T) => void,
 		lerp: (start: T, end: T, progress: number) => T,
 	): this {
@@ -332,7 +331,6 @@ export class SkyMap {
 
 			// Update the value and render
 			update(newValue);
-			callback(newValue);
 
 			// Continue animation if not finished
 			if (progress < 1) {
@@ -369,18 +367,10 @@ export class SkyMap {
 			[latitude, longitude],
 			duration,
 			([newLat, newLon]) => {
-				this.latitude = Angle.fromDegrees(newLat);
-				this.longitude = Angle.fromDegrees(newLon);
-				this.observer = this.getObserver();
-				this.lst = this.getLST();
-				this.render();
+				this.setLocation(newLat, newLon);
 				if (stepCallback !== undefined) {
 					stepCallback(newLat, newLon);
 				}
-			},
-			([newLat, newLon]) => {
-				this.latitude = Angle.fromDegrees(newLat);
-				this.longitude = Angle.fromDegrees(newLon);
 			},
 			(start, end, progress) => [lerp(start[0], end[0], progress), lerp(start[1], end[1], progress)],
 		);
@@ -407,9 +397,6 @@ export class SkyMap {
 				if (stepCallback !== undefined) {
 					stepCallback(new Date(newTime));
 				}
-			},
-			(newTime) => {
-				this.date = AstronomicalTime.fromUTCDate(new Date(newTime));
 			},
 			lerp,
 		);
@@ -745,5 +732,29 @@ export class SkyMap {
 
 	private getLST(): Angle {
 		return this.date.LST(this.longitude);
+	}
+
+	private updateLongitude(longitude: number): void {
+		this.observerParams.longitude = longitude;
+		this.longitude = Angle.fromDegrees(longitude);
+		this.observer = this.getObserver();
+		this.lst = this.getLST();
+	}
+
+	private updateLatitude(latitude: number): void {
+		this.observerParams.latitude = latitude;
+		this.latitude = Angle.fromDegrees(latitude);
+		this.observer = this.getObserver();
+	}
+
+	private updateDate(date: Date): void {
+		this.observerParams.date = date;
+		this.date = AstronomicalTime.fromUTCDate(date);
+		this.lst = this.getLST();
+	}
+
+	private updateFov(fov: number): void {
+		this.observerParams.fov = fov;
+		this.fovFactor = getFovFactor(fov);
 	}
 }
