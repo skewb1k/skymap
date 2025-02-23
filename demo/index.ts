@@ -37,7 +37,6 @@ const skymap = await SkyMap.create(
 	{
 		bgColor: "#0a0d13",
 		// fontFamily: "Roboto",
-		// glow: true,
 		constellations: {
 			lines: {
 				// color: "#64C8FF66",
@@ -47,6 +46,7 @@ const skymap = await SkyMap.create(
 				},
 			},
 		},
+		// glow: true,
 		// language: "ru",
 		// stars: {
 		// 	color: "#fff",
@@ -79,19 +79,19 @@ randomTime.onclick = () => {
 };
 
 gridCheckbox.addEventListener("change", () => {
-	skymap.config.grid.enabled = gridCheckbox.checked;
+	skymap.cfg.grid.enabled = gridCheckbox.checked;
 });
 
 starsCheckbox.addEventListener("change", () => {
-	skymap.config.stars.enabled = starsCheckbox.checked;
+	skymap.cfg.stars.enabled = starsCheckbox.checked;
 });
 
 constellationsLinesCheckbox.addEventListener("change", () => {
-	skymap.config.constellations.lines.enabled = constellationsLinesCheckbox.checked;
+	skymap.cfg.constellations.lines.enabled = constellationsLinesCheckbox.checked;
 });
 
 constellationsBoundariesCheckbox.addEventListener("change", () => {
-	skymap.config.constellations.boundaries.enabled = constellationsBoundariesCheckbox.checked;
+	skymap.cfg.constellations.boundaries.enabled = constellationsBoundariesCheckbox.checked;
 });
 
 fovRange.addEventListener("input", () => {

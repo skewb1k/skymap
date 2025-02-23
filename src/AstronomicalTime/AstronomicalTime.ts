@@ -1,9 +1,7 @@
-import Angle from "../Angle/Angle";
-
 export default class AstronomicalTime {
 	private readonly date: Date;
 
-	private gstCache: Angle | undefined;
+	private gstCache: number | undefined;
 	private julianDateCache: number | undefined;
 
 	private constructor(date: Date) {
@@ -57,11 +55,11 @@ export default class AstronomicalTime {
 	 * Calculates the Greenwich Sidereal Time (GST) in hours.
 	 * @returns The GST in hours (range: 0–24).
 	 */
-	get GST(): Angle {
+	get GST(): number {
 		if (this.gstCache === undefined) {
 			const d = this.julianDate - 2451545.0; // Days since J2000.0
 			const gmstInDegrees = 280.46061837 + 360.98564736629 * d;
-			this.gstCache = Angle.fromDegrees(gmstInDegrees).normalize();
+			this.gstCache = gmstInDegrees;
 		}
 		return this.gstCache;
 	}
@@ -71,7 +69,7 @@ export default class AstronomicalTime {
 	 * @param longitude - The longitude in degrees.
 	 * @returns The Local Sidereal Time (LST) in degrees.
 	 */
-	public LST(longitude: Angle): Angle {
-		return this.GST.add(longitude).normalize();
+	public LST(longitude: number): number {
+		return this.GST + longitude;
 	}
 }

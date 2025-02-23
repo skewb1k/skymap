@@ -1,5 +1,0 @@
-{
-	"editor.defaultFormatter": "biomejs.biome",
-	"prettier.enable": false,
-	"eslint.enable": false
-}

@@ -1,39 +1,28 @@
 {
 	"compilerOptions": {
-		// Enable latest features
-		"lib": [
-			"ESNext",
-			"DOM"
-		],
-		"target": "ESNext",
-		"module": "ESNext",
+		"target": "es2020",
+		"module": "esnext",
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"noUnusedLocals": true,
+		"noImplicitAny": true,
+		"allowJs": true,
+		"outDir": "dist",
+		"resolveJsonModule": true,
 		"moduleDetection": "force",
 		"jsx": "react-jsx",
-		"esModuleInterop": true,
-		"allowJs": true,
-		// Bundler mode
-		"moduleResolution": "bundler",
+		"moduleResolution": "node",
 		"allowImportingTsExtensions": true,
 		"verbatimModuleSyntax": false,
-		"declaration": true, // Generates .d.ts type declarations
-		"declarationMap": true, // Enables source mapping for declarations
-		"noEmit": true,
-		// Best practices
-		"strict": true,
-		"skipLibCheck": true,
+		"declaration": true,
+		"emitDeclarationOnly": true,
+		"declarationMap": true,
 		"noFallthroughCasesInSwitch": true,
-		// Some stricter flags (disabled by default)
-		"noUnusedLocals": false,
 		"noUnusedParameters": false,
-		"noPropertyAccessFromIndexSignature": false
+		"noPropertyAccessFromIndexSignature": false,
+		"sourceMap": true
 	},
-	"exclude": [
-		"node_modules",
-		"dist",
-		"build",
-		"out",
-		"coverage",
-		"public",
-		"**/*.test.ts"
-	]
+	"include": ["src"],
+	"exclude": ["node_modules", "dist"]
 }
