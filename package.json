@@ -3,31 +3,25 @@
 	"version": "1.0.4",
 	"description": "Interactive Sky Map library for canvas",
 	"type": "module",
-	"main": "dist/index.js",
-	"module": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"exports": {
-		"import": "./dist/index.js",
-		"require": "./dist/index.cjs"
-	},
-	"files": [
-		"dist"
-	],
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/skewb1k/skymap.git"
 	},
-	"bugs": {
-		"url": "https://github.com/skewb1k/skymap/issues"
-	},
+	"bugs": "https://github.com/skewb1k/skymap/issues",
 	"homepage": "https://github.com/skewb1k/skymap#readme",
 	"license": "MIT",
 	"author": "skewb1k",
+	"exports": {
+		"import": "dist/index.js",
+		"types": "./dist/index.d.ts",
+		"require": "dist/index.cjs"
+	},
+	"files": ["dist"],
 	"scripts": {
 		"demo": "bun typecheck && vite",
 		"build": "bun typecheck && tsup",
 		"typecheck": "tsc --noEmit",
-		"format": "biome check --write .",
+		"fmt": "biome check --write .",
 		"lint": "biome check .",
 		"test": "bun test",
 		"coverage": "bun test --coverage",
