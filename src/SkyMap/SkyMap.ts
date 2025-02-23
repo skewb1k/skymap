@@ -47,7 +47,7 @@ export class SkyMap {
 	private ctx: CanvasRenderingContext2D;
 
 	/** Reactive configuration object for styling and display options. */
-	public config: Config;
+	public cfg: Config;
 
 	private observerParams: ObserverParams;
 
@@ -94,7 +94,7 @@ export class SkyMap {
 	) {
 		this.container = container;
 		this.observerParams = { ...defaultObserverParams, ...observerParams };
-		this.config = deepProxy(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
+		this.cfg = deepProxy(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
 		if (!validateObserverParams(this.observerParams)) {
 			throw new Error("Invalid observer parameters.");
 		}
@@ -129,7 +129,7 @@ export class SkyMap {
 	 * @returns The SkyMap instance.
 	 */
 	public async clone(container: HTMLDivElement): Promise<SkyMap> {
-		return SkyMap.create(container, cloneDeep(this.observerParams), cloneDeep(this.config));
+		return SkyMap.create(container, cloneDeep(this.observerParams), cloneDeep(this.cfg));
 	}
 
 	/**
@@ -144,21 +144,22 @@ export class SkyMap {
 	 */
 	public resize(size: number): void;
 	public resize(width: number, height: number): void;
-	public resize(widthOrSize: number, height?: number): void {
+	public resize(width: number, height?: number): void {
 		if (height === undefined) {
 			// Square resize when only one parameter is provided
-			this.resize(widthOrSize, widthOrSize);
-		} else {
-			// Original resize logic
-			const dpr = window.devicePixelRatio || 1;
-			this.canvas.width = widthOrSize * dpr;
-			this.canvas.height = height * dpr;
-			this.radius = Math.min(widthOrSize, height) / 2;
-			this.center = { x: this.radius, y: this.radius };
-			this.scaleMod = this.radius / 400;
-			this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-			this.render();
+			this.resize(width, width);
+			return;
 		}
+
+		// Original resize logic
+		const dpr = window.devicePixelRatio || 1;
+		this.canvas.width = width * dpr;
+		this.canvas.height = height * dpr;
+		this.radius = Math.min(width, height) / 2;
+		this.center = { x: this.radius, y: this.radius };
+		this.scaleMod = this.radius / 400;
+		this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		this.render();
 	}
 
 	/**
@@ -205,13 +206,13 @@ export class SkyMap {
 			moonLabels,
 			sunLabels,
 		] = await Promise.all([
-			fetchJson<StarsData>(instance.config.stars.data),
-			fetchJson<ConstellationBoundary[]>(instance.config.constellations.boundaries.data),
-			fetchJson<ConstellationLine[]>(instance.config.constellations.lines.data),
-			fetchJson<(ConstellationLabel & { id: string })[]>(instance.config.constellations.lines.labels.data),
-			fetchJson<PlanetsLabels>(instance.config.planets.labels.data),
-			fetchJson<Labels>(instance.config.moon.label.data),
-			fetchJson<Labels>(instance.config.sun.label.data),
+			fetchJson<StarsData>(instance.cfg.stars.data),
+			fetchJson<ConstellationBoundary[]>(instance.cfg.constellations.boundaries.data),
+			fetchJson<ConstellationLine[]>(instance.cfg.constellations.lines.data),
+			fetchJson<(ConstellationLabel & { id: string })[]>(instance.cfg.constellations.lines.labels.data),
+			fetchJson<PlanetsLabels>(instance.cfg.planets.labels.data),
+			fetchJson<Labels>(instance.cfg.moon.label.data),
+			fetchJson<Labels>(instance.cfg.sun.label.data),
 		]);
 
 		// Process constellation labels into a Map
@@ -466,22 +467,22 @@ export class SkyMap {
 		this.ctx.beginPath();
 		this.ctx.shadowBlur = 0;
 		this.ctx.lineWidth = 2 * this.scaleMod;
-		this.ctx.strokeStyle = this.config.bgColor;
+		this.ctx.strokeStyle = this.cfg.bgColor;
 		arcCircle(this.ctx, this.center, this.radius);
 		this.ctx.stroke();
 	}
 
 	private drawConstellationsLines(): void {
-		if (!this.config.constellations.lines.enabled) return;
+		if (!this.cfg.constellations.lines.enabled) return;
 		if (!this.constellationsLines) throw new Error("constellations lines not loaded");
 
-		const fontSize = this.scaleMod * this.config.constellations.lines.labels.fontSize;
-		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
-		this.ctx.strokeStyle = this.config.constellations.lines.color;
-		this.ctx.lineWidth = this.config.constellations.lines.width * this.scaleMod;
-		if (this.config.glow) {
+		const fontSize = this.scaleMod * this.cfg.constellations.lines.labels.fontSize;
+		this.ctx.font = `${fontSize}px ${this.cfg.fontFamily}`;
+		this.ctx.strokeStyle = this.cfg.constellations.lines.color;
+		this.ctx.lineWidth = this.cfg.constellations.lines.width * this.scaleMod;
+		if (this.cfg.glow) {
 			this.ctx.shadowBlur = 5;
-			this.ctx.shadowColor = this.config.constellations.lines.color;
+			this.ctx.shadowColor = this.cfg.constellations.lines.color;
 		}
 
 		for (const constellation of this.constellationsLines) {
@@ -503,12 +504,12 @@ export class SkyMap {
 				}
 			}
 
-			if (this.config.constellations.lines.labels.enabled) {
+			if (this.cfg.constellations.lines.labels.enabled) {
 				if (!this.constellationsLabels) throw new Error("contellations labels not loaded");
 				const constellationsLabel = this.constellationsLabels.get(constellation.id);
 				if (!constellationsLabel) throw new Error("contellation label not found");
 
-				const text = constellationsLabel.labels[this.config.language];
+				const text = constellationsLabel.labels[this.cfg.language];
 				if (text) {
 					const textWidth = this.ctx.measureText(text).width;
 					const [raDeg, decDeg] = constellationsLabel.coo;
@@ -518,7 +519,7 @@ export class SkyMap {
 					const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
 					const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-					this.ctx.fillStyle = this.config.constellations.lines.labels.color;
+					this.ctx.fillStyle = this.cfg.constellations.lines.labels.color;
 					this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - fontSize / 2);
 				} else {
 					throw new Error("constellation label for specified language not found");
@@ -529,13 +530,13 @@ export class SkyMap {
 	}
 
 	private drawConstellationsBoundaries(): void {
-		if (!this.config.constellations.boundaries.enabled) return;
+		if (!this.cfg.constellations.boundaries.enabled) return;
 		if (!this.constellationsBoundaries) throw new Error("constellations boundaries not loaded");
-		this.ctx.strokeStyle = this.config.constellations.boundaries.color;
-		this.ctx.lineWidth = this.config.constellations.boundaries.width * this.scaleMod;
-		if (this.config.glow) {
+		this.ctx.strokeStyle = this.cfg.constellations.boundaries.color;
+		this.ctx.lineWidth = this.cfg.constellations.boundaries.width * this.scaleMod;
+		if (this.cfg.glow) {
 			this.ctx.shadowBlur = 5;
-			this.ctx.shadowColor = this.config.constellations.boundaries.color;
+			this.ctx.shadowColor = this.cfg.constellations.boundaries.color;
 		}
 
 		for (const constellation of this.constellationsBoundaries) {
@@ -561,9 +562,9 @@ export class SkyMap {
 	}
 
 	private drawPlanets(): void {
-		if (!this.config.planets.enabled) return;
-		const fontSize = this.scaleMod * this.config.planets.labels.fontSize;
-		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
+		if (!this.cfg.planets.enabled) return;
+		const fontSize = this.scaleMod * this.cfg.planets.labels.fontSize;
+		this.ctx.font = `${fontSize}px ${this.cfg.fontFamily}`;
 
 		for (const planet of planets) {
 			const equatorial = Equator(planet.body, this.date.UTCDate, this.observer, true, true);
@@ -574,18 +575,18 @@ export class SkyMap {
 			const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
 			const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-			const color = this.config.planets.color !== undefined ? this.config.planets.color : planet.color;
-			if (this.config.glow) {
+			const color = this.cfg.planets.color !== undefined ? this.cfg.planets.color : planet.color;
+			if (this.cfg.glow) {
 				this.ctx.shadowBlur = 10;
 				this.ctx.shadowColor = color;
 			}
 
-			const radius = (planet.radius * this.scaleMod * this.config.planets.scale) / this.fovFactor;
+			const radius = (planet.radius * this.scaleMod * this.cfg.planets.scale) / this.fovFactor;
 			this.drawDisk(coo, radius, color);
 
-			if (this.config.planets.labels.enabled) {
+			if (this.cfg.planets.labels.enabled) {
 				if (!this.planetLabels) throw new Error("planet labels not loaded");
-				const text = this.planetLabels[planet.id][this.config.language];
+				const text = this.planetLabels[planet.id][this.cfg.language];
 				if (text) {
 					const textWidth = this.ctx.measureText(text).width;
 					this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - radius - fontSize / 2);
@@ -597,9 +598,9 @@ export class SkyMap {
 	}
 
 	private drawMoon(): void {
-		if (!this.config.moon.enabled) return;
-		const fontSize = this.scaleMod * this.config.moon.label.fontSize;
-		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
+		if (!this.cfg.moon.enabled) return;
+		const fontSize = this.scaleMod * this.cfg.moon.label.fontSize;
+		this.ctx.font = `${fontSize}px ${this.cfg.fontFamily}`;
 
 		const equatorial = Equator(Body.Moon, this.date.UTCDate, this.observer, true, true);
 
@@ -609,21 +610,21 @@ export class SkyMap {
 		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-		const color = this.config.moon.color;
-		if (this.config.glow) {
+		const color = this.cfg.moon.color;
+		if (this.cfg.glow) {
 			this.ctx.shadowBlur = 10;
 			this.ctx.shadowColor = color;
 		}
 
-		const rad = (4 * this.scaleMod * this.config.moon.scale) / this.fovFactor;
+		const rad = (4 * this.scaleMod * this.cfg.moon.scale) / this.fovFactor;
 
 		this.drawDisk(coo, rad, color);
-		if (this.config.planets.labels.enabled) {
+		if (this.cfg.planets.labels.enabled) {
 			if (!this.moonLabels) throw new Error("moon labels not loaded");
-			const text = this.moonLabels[this.config.language];
+			const text = this.moonLabels[this.cfg.language];
 			if (text) {
 				const textWidth = this.ctx.measureText(text).width;
-				this.ctx.fillStyle = this.config.moon.label.color;
+				this.ctx.fillStyle = this.cfg.moon.label.color;
 				this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
 			} else {
 				throw new Error("moon label for specified language not found");
@@ -632,9 +633,9 @@ export class SkyMap {
 	}
 
 	private drawSun(): void {
-		if (!this.config.sun.enabled) return;
-		const fontSize = this.scaleMod * this.config.sun.label.fontSize;
-		this.ctx.font = `${fontSize}px ${this.config.fontFamily}`;
+		if (!this.cfg.sun.enabled) return;
+		const fontSize = this.scaleMod * this.cfg.sun.label.fontSize;
+		this.ctx.font = `${fontSize}px ${this.cfg.fontFamily}`;
 
 		const equatorial = Equator(Body.Sun, this.date.UTCDate, this.observer, true, true);
 
@@ -644,21 +645,21 @@ export class SkyMap {
 		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-		const color = this.config.sun.color;
-		if (this.config.glow) {
+		const color = this.cfg.sun.color;
+		if (this.cfg.glow) {
 			this.ctx.shadowBlur = 10;
 			this.ctx.shadowColor = color;
 		}
-		const rad = (8 * this.scaleMod * this.config.sun.scale) / this.fovFactor;
+		const rad = (8 * this.scaleMod * this.cfg.sun.scale) / this.fovFactor;
 
 		this.drawDisk(coo, rad, color);
 
-		if (this.config.planets.labels.enabled) {
+		if (this.cfg.planets.labels.enabled) {
 			if (!this.sunLabels) throw new Error("sun labels not loaded");
-			const text = this.sunLabels[this.config.language];
+			const text = this.sunLabels[this.cfg.language];
 			if (text) {
 				const textWidth = this.ctx.measureText(text).width;
-				this.ctx.fillStyle = this.config.sun.label.color;
+				this.ctx.fillStyle = this.cfg.sun.label.color;
 				this.ctx.fillText(text, coo.x - textWidth / 2, coo.y - rad * 1.5);
 			} else {
 				throw new Error("sun label for specified language not found");
@@ -667,12 +668,12 @@ export class SkyMap {
 	}
 
 	private drawBg(): void {
-		this.ctx.fillStyle = this.config.bgColor;
+		this.ctx.fillStyle = this.cfg.bgColor;
 		this.ctx.fillRect(0, 0, this.radius * 2, this.radius * 2);
 	}
 
 	private drawStars(): void {
-		if (!this.config.stars.enabled) return;
+		if (!this.cfg.stars.enabled) return;
 		if (!this.stars) throw new Error("stars not loaded");
 
 		for (const star of this.stars.stars) {
@@ -687,10 +688,10 @@ export class SkyMap {
 
 			// star with mag = -1.44 will have size 8
 			const size =
-				((8 / 1.18 ** (star.mag + this.stars.mag.max)) * this.scaleMod * this.config.stars.scale) / this.fovFactor;
-			const color = this.config.stars.color !== undefined ? this.config.stars.color : bvToRGB(star.bv);
+				((8 / 1.18 ** (star.mag + this.stars.mag.max)) * this.scaleMod * this.cfg.stars.scale) / this.fovFactor;
+			const color = this.cfg.stars.color !== undefined ? this.cfg.stars.color : bvToRGB(star.bv);
 
-			if (this.config.glow) {
+			if (this.cfg.glow) {
 				this.ctx.shadowBlur = 10;
 				this.ctx.shadowColor = color;
 			}
@@ -700,9 +701,9 @@ export class SkyMap {
 	}
 
 	private drawGrid(): void {
-		if (!this.config.grid.enabled) return;
-		this.ctx.strokeStyle = this.config.grid.color;
-		this.ctx.lineWidth = this.config.grid.width * this.scaleMod;
+		if (!this.cfg.grid.enabled) return;
+		this.ctx.strokeStyle = this.cfg.grid.color;
+		this.ctx.lineWidth = this.cfg.grid.width * this.scaleMod;
 
 		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
 			this.ctx.beginPath();
