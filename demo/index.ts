@@ -37,7 +37,6 @@ const skymap = await SkyMap.create(
 	{
 		bgColor: "#0a0d13",
 		// fontFamily: "Roboto",
-		// glow: true,
 		constellations: {
 			lines: {
 				// color: "#64C8FF66",
@@ -47,6 +46,7 @@ const skymap = await SkyMap.create(
 				},
 			},
 		},
+		// glow: true,
 		// language: "ru",
 		// stars: {
 		// 	color: "#fff",

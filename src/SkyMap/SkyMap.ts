@@ -1,14 +1,15 @@
 import { Body, Equator, Observer } from "astronomy-engine";
 import cloneDeep from "lodash.clonedeep";
 import Angle from "../Angle/Angle";
+import { degToRad, hoursToRad } from "../Angle/angleconv";
 import AstronomicalTime from "../AstronomicalTime/AstronomicalTime";
 import { type Config, defaultConfig, mergeConfigs } from "../config";
 import type DeepPartial from "../helpers/DeepPartial";
-import { arcCircle, clipCircle, lineTo, moveTo } from "../helpers/canvas";
+import { arcCircle, lineTo, moveTo } from "../helpers/canvas";
 import { bvToRGB } from "../helpers/color";
 import deepProxy from "../helpers/deepProxy";
 import easeProgress from "../helpers/easeProgress";
-import equatorialToHorizontal from "../helpers/equatorialToHorizontal";
+import { equatorialToHorizontal } from "../helpers/equatorialToHorizontal";
 import fetchJson from "../helpers/fetchJson";
 import getFovFactor from "../helpers/getFovFactor";
 import lerp from "../helpers/lerp";
@@ -93,6 +94,8 @@ export class SkyMap {
 		config: DeepPartial<Config> = deepProxy(defaultConfig, this.configUpdatedHandler),
 	) {
 		this.container = container;
+		this.applyContainerStyles();
+
 		this.observerParams = { ...defaultObserverParams, ...observerParams };
 		this.cfg = deepProxy(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
 		if (!validateObserverParams(this.observerParams)) {
@@ -113,7 +116,7 @@ export class SkyMap {
 		this.date = AstronomicalTime.fromUTCDate(this.observerParams.date);
 		this.fovFactor = getFovFactor(this.observerParams.fov);
 
-		this.lst = this.date.LST(this.longitude);
+		this.lst = Angle.fromDegrees(this.date.LST(this.longitude.deg));
 		this.observer = this.getObserver();
 
 		this.radius = 0;
@@ -242,10 +245,6 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLocation(latitude: number, longitude: number): this {
-		if (!validateLatitude(latitude) || !validateLongitude(longitude)) {
-			throw new Error("Invalid latitude or longitude value");
-		}
-
 		this.updateLatitude(latitude);
 		this.updateLongitude(longitude);
 		this.render();
@@ -259,10 +258,6 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLatitude(latitude: number): this {
-		if (!validateLatitude(latitude)) {
-			throw new Error("Invalid latitude value");
-		}
-
 		this.updateLatitude(latitude);
 		this.render();
 		return this;
@@ -275,10 +270,6 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLongitude(longitude: number): this {
-		if (!validateLongitude(longitude)) {
-			throw new Error("Invalid longitude value");
-		}
-
 		this.updateLongitude(longitude);
 		this.render();
 		return this;
@@ -303,10 +294,6 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setFov(fov: number): this {
-		if (!validateFov(fov)) {
-			throw new Error("Invalid fov value");
-		}
-
 		this.updateFov(fov);
 		this.render();
 		return this;
@@ -345,7 +332,6 @@ export class SkyMap {
 		update: (value: T) => void,
 		lerp: (start: T, end: T, progress: number) => T,
 	): this {
-		// Cancel the previous animation if it exists
 		if (this.animationFrameId) {
 			cancelAnimationFrame(this.animationFrameId);
 		}
@@ -358,14 +344,12 @@ export class SkyMap {
 			const easedProgress = easeProgress(progress);
 			const newValue = lerp(startValue, targetValue, easedProgress);
 
-			// Update the value and render
 			update(newValue);
 
-			// Continue animation if not finished
 			if (progress < 1) {
 				this.animationFrameId = requestAnimationFrame(step);
 			} else {
-				this.animationFrameId = null; // Clear the animation frame ID when finished
+				this.animationFrameId = null;
 			}
 		};
 
@@ -392,8 +376,8 @@ export class SkyMap {
 			throw new Error("Invalid latitude or longitude value");
 		}
 
-		const startLat = this.latitude.degrees;
-		const startLon = this.longitude.degrees;
+		const startLat = this.latitude.deg;
+		const startLon = this.longitude.deg;
 
 		return this.animate<[number, number]>(
 			[startLat, startLon],
@@ -440,7 +424,6 @@ export class SkyMap {
 	 */
 	public render(): void {
 		// const now = performance.now();
-		clipCircle(this.ctx, this.center, this.radius);
 		this.drawBg();
 
 		this.drawGrid();
@@ -490,13 +473,11 @@ export class SkyMap {
 			for (const group of constellation.coo) {
 				for (let j = 0; j < group.length; j++) {
 					const [raDeg, decDeg] = group[j];
-					const ra = Angle.fromDegrees(raDeg);
-					const dec = Angle.fromDegrees(decDeg);
 
-					const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
+					const { alt, az } = equatorialToHorizontal(degToRad(raDeg), degToRad(decDeg), this.latitude.ra, this.lst.ra);
 					const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-					if (alt.degrees < -20 || j === 0) {
+					if (alt < -20 || j === 0) {
 						moveTo(this.ctx, coo);
 					} else {
 						lineTo(this.ctx, coo);
@@ -513,10 +494,8 @@ export class SkyMap {
 				if (text) {
 					const textWidth = this.ctx.measureText(text).width;
 					const [raDeg, decDeg] = constellationsLabel.coo;
-					const ra = Angle.fromDegrees(raDeg);
-					const dec = Angle.fromDegrees(decDeg);
 
-					const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
+					const { alt, az } = equatorialToHorizontal(degToRad(raDeg), degToRad(decDeg), this.latitude.ra, this.lst.ra);
 					const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 					this.ctx.fillStyle = this.cfg.constellations.lines.labels.color;
@@ -544,13 +523,11 @@ export class SkyMap {
 			for (const group of constellation.coo) {
 				for (let j = 0; j < group.length; j++) {
 					const [raDeg, decDeg] = group[j];
-					const ra = Angle.fromDegrees(raDeg);
-					const dec = Angle.fromDegrees(decDeg);
 
-					const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
+					const { alt, az } = equatorialToHorizontal(degToRad(raDeg), degToRad(decDeg), this.latitude.ra, this.lst.ra);
 					const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
-					if (alt.degrees < -45) {
+					if (alt < -45) {
 						moveTo(this.ctx, coo);
 					} else {
 						lineTo(this.ctx, coo);
@@ -569,10 +546,10 @@ export class SkyMap {
 		for (const planet of planets) {
 			const equatorial = Equator(planet.body, this.date.UTCDate, this.observer, true, true);
 
-			const ra = Angle.fromHours(equatorial.ra);
-			const dec = Angle.fromDegrees(equatorial.dec);
+			const ra = hoursToRad(equatorial.ra);
+			const dec = degToRad(equatorial.dec);
 
-			const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
+			const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude.ra, this.lst.ra);
 			const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 			const color = this.cfg.planets.color !== undefined ? this.cfg.planets.color : planet.color;
@@ -604,10 +581,10 @@ export class SkyMap {
 
 		const equatorial = Equator(Body.Moon, this.date.UTCDate, this.observer, true, true);
 
-		const ra = Angle.fromHours(equatorial.ra);
-		const dec = Angle.fromDegrees(equatorial.dec);
+		const ra = hoursToRad(equatorial.ra);
+		const dec = degToRad(equatorial.dec);
 
-		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
+		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude.ra, this.lst.ra);
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 		const color = this.cfg.moon.color;
@@ -639,10 +616,10 @@ export class SkyMap {
 
 		const equatorial = Equator(Body.Sun, this.date.UTCDate, this.observer, true, true);
 
-		const ra = Angle.fromHours(equatorial.ra);
-		const dec = Angle.fromDegrees(equatorial.dec);
+		const raRad = hoursToRad(equatorial.ra);
+		const decRad = degToRad(equatorial.dec);
 
-		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
+		const { alt, az } = equatorialToHorizontal(raRad, decRad, this.latitude.ra, this.lst.ra);
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 		const color = this.cfg.sun.color;
@@ -678,11 +655,9 @@ export class SkyMap {
 
 		for (const star of this.stars.stars) {
 			// if (star.mag > 5.2) return;
-			const starRa = Angle.fromDegrees(star.lon);
-			const starDec = Angle.fromDegrees(star.lat);
 
-			const { alt, az } = equatorialToHorizontal(starRa, starDec, this.latitude, this.lst);
-			if (alt.degrees < 0) continue;
+			const { alt, az } = equatorialToHorizontal(degToRad(star.lon), degToRad(star.lat), this.latitude.ra, this.lst.ra);
+			if (alt < 0) continue;
 
 			const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
@@ -707,18 +682,19 @@ export class SkyMap {
 
 		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
 			this.ctx.beginPath();
-			const ra = Angle.fromDegrees(raDeg);
+			const raRad = degToRad(raDeg);
 
 			for (let decDeg = raDeg % 90 === 0 ? -90 : -80; decDeg <= (raDeg % 90 === 0 ? 90 : 80); decDeg += 5) {
-				const dec = Angle.fromDegrees(decDeg);
-				const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
+				const decRad = degToRad(decDeg);
 
-				if (Math.abs(this.latitude.degrees) < 1) {
-					if (alt.degrees < 0) {
+				const { alt, az } = equatorialToHorizontal(raRad, decRad, this.latitude.ra, this.lst.ra);
+
+				if (Math.abs(this.latitude.deg) < 1) {
+					if (alt < 0) {
 						continue;
 					}
 				} else {
-					if (alt.degrees < -1) {
+					if (alt < -1) {
 						continue;
 					}
 				}
@@ -732,17 +708,17 @@ export class SkyMap {
 		this.ctx.beginPath();
 		for (let decDeg = -80; decDeg <= 80; decDeg += 20) {
 			// skips equator if latitude is 90 or -90
-			if (decDeg === 0 && (this.latitude.degrees === 90 || this.latitude.degrees === -90)) {
+			if (decDeg === 0 && (this.latitude.deg === 90 || this.latitude.deg === -90)) {
 				continue;
 			}
-			const dec = Angle.fromDegrees(decDeg);
+			const decRad = degToRad(decDeg);
 			let firstPointVisible = false;
 
 			for (let raDeg = 0; raDeg <= 360; raDeg += 5) {
-				const ra = Angle.fromDegrees(raDeg);
-				const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude, this.lst);
+				const raRad = degToRad(raDeg);
+				const { alt, az } = equatorialToHorizontal(raRad, decRad, this.latitude.ra, this.lst.ra);
 
-				if (alt.degrees < -3) {
+				if (alt < -3) {
 					firstPointVisible = false;
 					continue;
 				}
@@ -759,22 +735,35 @@ export class SkyMap {
 		this.ctx.stroke();
 	}
 
-	private getObserver(): Observer {
-		return new Observer(this.latitude.degrees, this.longitude.degrees, 0);
+	private applyContainerStyles(): void {
+		this.container.style.clipPath = "circle(50%)";
+		this.container.style.aspectRatio = "1/1";
 	}
 
-	private getLST(): Angle {
-		return this.date.LST(this.longitude);
+	private getObserver(): Observer {
+		return new Observer(this.latitude.deg, this.longitude.deg, 0);
+	}
+
+	private getLST(): number {
+		return this.date.LST(this.longitude.deg);
 	}
 
 	private updateLongitude(longitude: number): void {
+		if (!validateLongitude(longitude)) {
+			throw new Error("Invalid longitude value");
+		}
+
 		this.observerParams.longitude = longitude;
 		this.longitude = Angle.fromDegrees(longitude);
 		this.observer = this.getObserver();
-		this.lst = this.getLST();
+		this.lst = Angle.fromDegrees(this.getLST());
 	}
 
 	private updateLatitude(latitude: number): void {
+		if (!validateLatitude(latitude)) {
+			throw new Error("Invalid latitude value");
+		}
+
 		this.observerParams.latitude = latitude;
 		this.latitude = Angle.fromDegrees(latitude);
 		this.observer = this.getObserver();
@@ -783,10 +772,14 @@ export class SkyMap {
 	private updateDate(date: Date): void {
 		this.observerParams.date = date;
 		this.date = AstronomicalTime.fromUTCDate(date);
-		this.lst = this.getLST();
+		this.lst = Angle.fromDegrees(this.getLST());
 	}
 
 	private updateFov(fov: number): void {
+		if (!validateFov(fov)) {
+			throw new Error("Invalid fov value");
+		}
+
 		this.observerParams.fov = fov;
 		this.fovFactor = getFovFactor(fov);
 	}
