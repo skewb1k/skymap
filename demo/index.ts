@@ -125,7 +125,7 @@ lonRange.addEventListener("input", () => {
 });
 
 dateInput.addEventListener("input", () => {
-	skymap.setDateWithAnimation(new Date(dateInput.value), 500, () => {});
+	skymap.setDate(new Date(dateInput.value));
 });
 
 // Get the DPR and size of the canvas

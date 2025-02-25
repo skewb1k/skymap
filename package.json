@@ -29,14 +29,17 @@
 	},
 	"dependencies": {
 		"astronomy-engine": "^2.1.19",
+		"browser-geo-tz": "^0.2.0",
 		"lodash.clonedeep": "^4.5.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@jest/globals": "^29.7.0",
+		"@types/geobuf": "^3.0.4",
 		"@types/jest": "^29.5.14",
 		"@types/lodash.clonedeep": "^4.5.9",
 		"@types/node": "^22.13.5",
+		"@types/pbf": "^3.0.5",
 		"jest": "^29.7.0",
 		"ts-jest": "^29.2.6",
 		"tsup": "^8.3.6",
