@@ -1,4 +1,5 @@
 import { Body, Equator, Observer } from "astronomy-engine";
+import { init } from "browser-geo-tz";
 import cloneDeep from "lodash.clonedeep";
 import Angle from "../Angle/Angle";
 import { degToRad, hoursToRad } from "../Angle/angleconv";
@@ -46,6 +47,10 @@ export class SkyMap {
 	private container: HTMLDivElement;
 	private canvas: HTMLCanvasElement;
 	private ctx: CanvasRenderingContext2D;
+
+	private geoTz: {
+		find: (lat: number, lon: number) => Promise<string[]>;
+	};
 
 	/** Reactive configuration object for styling and display options. */
 	public cfg: Config;
@@ -95,6 +100,8 @@ export class SkyMap {
 	) {
 		this.container = container;
 		this.applyContainerStyles();
+
+		this.geoTz = init();
 
 		this.observerParams = { ...defaultObserverParams, ...observerParams };
 		this.cfg = deepProxy(mergeConfigs(defaultConfig, config), this.configUpdatedHandler);
@@ -680,14 +687,17 @@ export class SkyMap {
 		this.ctx.strokeStyle = this.cfg.grid.color;
 		this.ctx.lineWidth = this.cfg.grid.width * this.scaleMod;
 
-		for (let raDeg = 0; raDeg < 360; raDeg += 15) {
+		for (let raRad = 0; raRad < 24; raRad += 1) {
 			this.ctx.beginPath();
-			const raRad = degToRad(raDeg);
+			const decStart = raRad % 6 === 0 ? -18 : -16;
 
-			for (let decDeg = raDeg % 90 === 0 ? -90 : -80; decDeg <= (raDeg % 90 === 0 ? 90 : 80); decDeg += 5) {
-				const decRad = degToRad(decDeg);
-
-				const { alt, az } = equatorialToHorizontal(raRad, decRad, this.latitude.ra, this.lst.ra);
+			for (let decRad = decStart; decRad <= -decStart; decRad += 1) {
+				const { alt, az } = equatorialToHorizontal(
+					(raRad * Math.PI) / 12,
+					(decRad * Math.PI) / 36,
+					this.latitude.ra,
+					this.lst.ra,
+				);
 
 				if (Math.abs(this.latitude.deg) < 1) {
 					if (alt < 0) {
@@ -706,17 +716,16 @@ export class SkyMap {
 		}
 
 		this.ctx.beginPath();
-		for (let decDeg = -80; decDeg <= 80; decDeg += 20) {
-			// skips equator if latitude is 90 or -90
-			if (decDeg === 0 && (this.latitude.deg === 90 || this.latitude.deg === -90)) {
-				continue;
-			}
-			const decRad = degToRad(decDeg);
+		for (let decRad = -4; decRad <= 4; decRad += 1) {
 			let firstPointVisible = false;
 
-			for (let raDeg = 0; raDeg <= 360; raDeg += 5) {
-				const raRad = degToRad(raDeg);
-				const { alt, az } = equatorialToHorizontal(raRad, decRad, this.latitude.ra, this.lst.ra);
+			for (let raRad = 0; raRad <= 72; raRad += 1) {
+				const { alt, az } = equatorialToHorizontal(
+					(raRad * Math.PI) / 36,
+					(decRad * Math.PI) / 9,
+					this.latitude.ra,
+					this.lst.ra,
+				);
 
 				if (alt < -3) {
 					firstPointVisible = false;
@@ -753,10 +762,20 @@ export class SkyMap {
 			throw new Error("Invalid longitude value");
 		}
 
-		this.observerParams.longitude = longitude;
 		this.longitude = Angle.fromDegrees(longitude);
-		this.observer = this.getObserver();
-		this.lst = Angle.fromDegrees(this.getLST());
+		this.geoTz.find(this.latitude.deg, this.longitude.deg).then((tz) => {
+			const date1 = new Date(
+				this.date.UTCDate.toLocaleString("en-us", {
+					timeZone: tz[0],
+				}),
+			);
+			this.observerParams.date = date1;
+			this.date = AstronomicalTime.fromUTCDate(date1);
+
+			this.observerParams.longitude = longitude;
+			this.observer = this.getObserver();
+			this.lst = Angle.fromDegrees(this.getLST());
+		});
 	}
 
 	private updateLatitude(latitude: number): void {
@@ -764,15 +783,34 @@ export class SkyMap {
 			throw new Error("Invalid latitude value");
 		}
 
-		this.observerParams.latitude = latitude;
 		this.latitude = Angle.fromDegrees(latitude);
-		this.observer = this.getObserver();
+		this.geoTz.find(this.latitude.deg, this.longitude.deg).then((tz) => {
+			const date1 = new Date(
+				this.date.UTCDate.toLocaleString("en-us", {
+					timeZone: tz[0],
+				}),
+			);
+			this.observerParams.date = date1;
+			this.date = AstronomicalTime.fromUTCDate(date1);
+			this.lst = Angle.fromDegrees(this.getLST());
+
+			this.observerParams.latitude = latitude;
+
+			this.observer = this.getObserver();
+		});
 	}
 
 	private updateDate(date: Date): void {
-		this.observerParams.date = date;
-		this.date = AstronomicalTime.fromUTCDate(date);
-		this.lst = Angle.fromDegrees(this.getLST());
+		this.geoTz.find(this.latitude.deg, this.longitude.deg).then((tz) => {
+			const date1 = new Date(
+				date.toLocaleString("en-us", {
+					timeZone: tz[0],
+				}),
+			);
+			this.observerParams.date = date1;
+			this.date = AstronomicalTime.fromUTCDate(date1);
+			this.lst = Angle.fromDegrees(this.getLST());
+		});
 	}
 
 	private updateFov(fov: number): void {
