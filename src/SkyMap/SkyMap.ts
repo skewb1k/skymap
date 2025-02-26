@@ -2,7 +2,7 @@ import { Body, Equator, Observer } from "astronomy-engine";
 import { init } from "browser-geo-tz";
 import cloneDeep from "lodash.clonedeep";
 import Angle from "../Angle/Angle";
-import { degToRad, hoursToRad } from "../Angle/angleconv";
+import { degToRad, hoursToRad, radToDeg } from "../Angle/angleconv";
 import AstronomicalTime from "../AstronomicalTime/AstronomicalTime";
 import { type Config, defaultConfig, mergeConfigs } from "../config";
 import type DeepPartial from "../helpers/DeepPartial";
@@ -10,10 +10,9 @@ import { arcCircle, lineTo, moveTo } from "../helpers/canvas";
 import { bvToRGB } from "../helpers/color";
 import deepProxy from "../helpers/deepProxy";
 import easeProgress from "../helpers/easeProgress";
-import { equatorialToHorizontal } from "../helpers/equatorialToHorizontal";
 import fetchJson from "../helpers/fetchJson";
 import getFovFactor from "../helpers/getFovFactor";
-import lerp from "../helpers/lerp";
+import lerpAngle from "../helpers/lerp";
 import projectSphericalTo2D from "../helpers/projectSphericalTo2D";
 import {
 	type ObserverParams,
@@ -32,6 +31,11 @@ import type Labels from "../types/Labels.type";
 import type PlanetsLabels from "../types/PlanetLabels.type";
 import type StarsData from "../types/StarsData.type";
 
+type AngleWithSinAndCos = Angle & {
+	cos: number;
+	sin: number;
+};
+
 /**
  * SkyMap renders an interactive sky map on a canvas element.
  *
@@ -39,9 +43,13 @@ import type StarsData from "../types/StarsData.type";
  * constellation features using astronomical formulas and renders them
  * based on a configurable visual style.
  *
- * @example
- * const container = document.getElementById("skymap-container") as HTMLDivElement;
- * const skyMap = new SkyMap(container, { latitude: 51.5, longitude: -0.12 });
+ * @param container - The target div element where the canvas will be appended.
+ * @param observerParams - Observer parameters for location and time.
+ *   - `latitude`: The new latitude in degrees.
+ *   - `longitude`: The new longitude in degrees.
+ *   - `date`: The new date/time for astronomical calculations.
+ *   - `fov`: The new field of view in degrees.
+ * @param config - Configuration to customize colors, sizes, language, etc. Uses defaults for missing fields.
  */
 export class SkyMap {
 	private container: HTMLDivElement;
@@ -62,7 +70,7 @@ export class SkyMap {
 
 	private radius: number;
 	private center: Coo;
-	private latitude: Angle;
+	private latitude: AngleWithSinAndCos;
 	private longitude: Angle;
 	private date: AstronomicalTime;
 	private observer: Observer;
@@ -86,20 +94,23 @@ export class SkyMap {
 		this.render();
 	};
 
+	private resizeObserver: ResizeObserver;
+
 	private resizeHandler = () => {
 		const width = this.container.clientWidth;
-		const height = this.container.clientHeight;
 
-		this.resize(width, height);
+		this.resize(width);
 	};
 
-	private constructor(
+	public constructor(
 		container: HTMLDivElement,
 		observerParams: Partial<ObserverParams> = defaultObserverParams,
 		config: DeepPartial<Config> = deepProxy(defaultConfig, this.configUpdatedHandler),
 	) {
-		this.container = container;
-		this.applyContainerStyles();
+		this.container = document.createElement("div");
+		this.container.style.clipPath = "circle(50%)";
+		this.container.style.aspectRatio = "1/1";
+		container.append(this.container);
 
 		this.geoTz = init();
 
@@ -118,7 +129,8 @@ export class SkyMap {
 		this.container.appendChild(canvas);
 		this.ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-		this.latitude = Angle.fromDegrees(this.observerParams.latitude);
+		this.latitude = this.calculateAngleWithSinAndCos(this.observerParams.latitude);
+
 		this.longitude = Angle.fromDegrees(this.observerParams.longitude);
 		this.date = AstronomicalTime.fromUTCDate(this.observerParams.date);
 		this.fovFactor = getFovFactor(this.observerParams.fov);
@@ -129,119 +141,76 @@ export class SkyMap {
 		this.radius = 0;
 		this.center = { x: 0, y: 0 };
 		this.scaleMod = 0;
-		window.addEventListener("resize", this.resizeHandler);
+
+		Promise.all([
+			fetchJson<StarsData>(this.cfg.stars.data),
+			fetchJson<ConstellationBoundary[]>(this.cfg.constellations.boundaries.data),
+			fetchJson<ConstellationLine[]>(this.cfg.constellations.lines.data),
+			fetchJson<(ConstellationLabel & { id: string })[]>(this.cfg.constellations.lines.labels.data),
+			fetchJson<PlanetsLabels>(this.cfg.planets.labels.data),
+			fetchJson<Labels>(this.cfg.moon.label.data),
+			fetchJson<Labels>(this.cfg.sun.label.data),
+		]).then(
+			([
+				stars,
+				constellationsBoundaries,
+				constellationsLines,
+				constellationsLabelsRaw,
+				planetLabels,
+				moonLabels,
+				sunLabels,
+			]) => {
+				const constellationsLabels = new Map<string, ConstellationLabel>();
+				for (const label of constellationsLabelsRaw) {
+					constellationsLabels.set(label.id, { coo: label.coo, labels: label.labels });
+				}
+
+				this.stars = stars;
+				this.constellationsBoundaries = constellationsBoundaries;
+				this.constellationsLines = constellationsLines;
+				this.constellationsLabels = constellationsLabels;
+				this.planetLabels = planetLabels;
+				this.moonLabels = moonLabels;
+				this.sunLabels = sunLabels;
+				this.setDate(this.observerParams.date);
+			},
+		);
+
+		this.resizeObserver = new ResizeObserver(this.resizeHandler);
+		this.resizeObserver.observe(this.container);
 	}
 
 	/**
 	 * Clones this SkyMap instance, creating a new instance with the same configuration for another container.
 	 *
-	 * @param container - The target div element where the canvas will be appended.
+	 * @param container - The target div element where the skymap will be appended.
 	 * @returns The SkyMap instance.
 	 */
-	public async clone(container: HTMLDivElement): Promise<SkyMap> {
-		return SkyMap.create(container, cloneDeep(this.observerParams), cloneDeep(this.cfg));
+	public clone(container: HTMLDivElement): SkyMap {
+		return new SkyMap(container, cloneDeep(this.observerParams), cloneDeep(this.cfg));
+	}
+
+	private calculateAngleWithSinAndCos(deg: number): AngleWithSinAndCos {
+		const angle = Angle.fromDegrees(deg);
+		return { ...angle, cos: Math.cos(angle.ra), sin: Math.sin(angle.ra) };
 	}
 
 	/**
 	 * Resizes the canvas while maintaining proper device pixel ratio (DPR) scaling.
 	 *
-	 * @overload
 	 * @param size - The size in pixels for both width and height to create a square canvas.
-	 *
-	 * @overload
-	 * @param width - The width of the canvas in pixels.
-	 * @param height - The height of the canvas in pixels.
+	 * @returns The SkyMap instance.
 	 */
-	public resize(size: number): void;
-	public resize(width: number, height: number): void;
-	public resize(width: number, height?: number): void {
-		if (height === undefined) {
-			// Square resize when only one parameter is provided
-			this.resize(width, width);
-			return;
-		}
-
-		// Original resize logic
+	public resize(size: number): this {
 		const dpr = window.devicePixelRatio || 1;
-		this.canvas.width = width * dpr;
-		this.canvas.height = height * dpr;
-		this.radius = Math.min(width, height) / 2;
+		this.canvas.width = size * dpr;
+		this.canvas.height = size * dpr;
+		this.radius = size / 2;
 		this.center = { x: this.radius, y: this.radius };
 		this.scaleMod = this.radius / 400;
 		this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 		this.render();
-	}
-
-	/**
-	 * Asynchronous factory method to create an instance of SkyMap.
-	 *
-	 * @param container - The target div element where the canvas will be appended.
-	 * @param observerParams - Observer parameters for location and time.
-	 *   - `latitude`: The new latitude in degrees.
-	 *   - `longitude`: The new longitude in degrees.
-	 *   - `date`: The new date/time for astronomical calculations.
-	 *   - `fov`: The new field of view in degrees.
-	 * @param config - Configuration to customize colors, sizes, language, etc. Uses defaults for missing fields.
-	 * @throws An error if data loading fails.
-	 * @example
-	 * const skymap = await SkyMap.create(
-	 * 		container,
-	 * 		{
-	 * 			date: new Date("2023-01-01T12:00:00Z"),
-	 * 		},
-	 * 		{
-	 * 			bgColor: "#0a0d13",
-	 * 			constellations: {
-	 * 				lines: {
-	 * 					labels: {
-	 * 						enabled: false,
-	 * 					},
-	 * 				},
-	 * 			},
-	 * 		},
-	 * );
-	 */
-	static async create(
-		container: HTMLDivElement,
-		observerParams: Partial<ObserverParams> = defaultObserverParams,
-		config: DeepPartial<Config> = defaultConfig,
-	): Promise<SkyMap> {
-		const instance = new SkyMap(container, observerParams, config);
-		const [
-			stars,
-			constellationsBoundaries,
-			constellationsLines,
-			constellationsLabelsRaw,
-			planetLabels,
-			moonLabels,
-			sunLabels,
-		] = await Promise.all([
-			fetchJson<StarsData>(instance.cfg.stars.data),
-			fetchJson<ConstellationBoundary[]>(instance.cfg.constellations.boundaries.data),
-			fetchJson<ConstellationLine[]>(instance.cfg.constellations.lines.data),
-			fetchJson<(ConstellationLabel & { id: string })[]>(instance.cfg.constellations.lines.labels.data),
-			fetchJson<PlanetsLabels>(instance.cfg.planets.labels.data),
-			fetchJson<Labels>(instance.cfg.moon.label.data),
-			fetchJson<Labels>(instance.cfg.sun.label.data),
-		]);
-
-		// Process constellation labels into a Map
-		const constellationsLabels = new Map<string, ConstellationLabel>();
-		for (const label of constellationsLabelsRaw) {
-			constellationsLabels.set(label.id, { coo: label.coo, labels: label.labels });
-		}
-
-		// Assign values to the instance
-		instance.stars = stars;
-		instance.constellationsBoundaries = constellationsBoundaries;
-		instance.constellationsLines = constellationsLines;
-		instance.constellationsLabels = constellationsLabels;
-		instance.planetLabels = planetLabels;
-		instance.moonLabels = moonLabels;
-		instance.sunLabels = sunLabels;
-
-		instance.resizeHandler();
-		return instance;
+		return this;
 	}
 
 	/**
@@ -249,12 +218,18 @@ export class SkyMap {
 	 *
 	 * @param latitude - The new latitude in degrees.
 	 * @param longitude - The new longitude in degrees.
-	 * @returns The SkyMap instance for chaining.
+	 * @returns The SkyMap instance.
 	 */
 	public setLocation(latitude: number, longitude: number): this {
-		this.updateLatitude(latitude);
+		if (!validateLatitude(latitude) || !validateLongitude(longitude)) {
+			throw new Error("Invalid latitude or longitude value");
+		}
+
 		this.updateLongitude(longitude);
-		this.render();
+		this.updateLatitude(latitude);
+		this.updateDate().then((ok) => {
+			if (ok) this.render();
+		});
 		return this;
 	}
 
@@ -265,8 +240,14 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLatitude(latitude: number): this {
+		if (!validateLatitude(latitude)) {
+			throw new Error("Invalid latitude value");
+		}
+
 		this.updateLatitude(latitude);
-		this.render();
+		this.updateDate().then((ok) => {
+			if (ok) this.render();
+		});
 		return this;
 	}
 
@@ -277,8 +258,14 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setLongitude(longitude: number): this {
+		if (!validateLongitude(longitude)) {
+			throw new Error("Invalid longitude value");
+		}
+
 		this.updateLongitude(longitude);
-		this.render();
+		this.updateDate().then((ok) => {
+			if (ok) this.render();
+		});
 		return this;
 	}
 
@@ -289,8 +276,9 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setDate(date: Date): this {
-		this.updateDate(date);
-		this.render();
+		this.updateDate(date).then((ok) => {
+			if (ok) this.render();
+		});
 		return this;
 	}
 
@@ -301,6 +289,10 @@ export class SkyMap {
 	 * @returns The SkyMap instance for chaining.
 	 */
 	public setFov(fov: number): this {
+		if (!validateFov(fov)) {
+			throw new Error("Invalid fov value");
+		}
+
 		this.updateFov(fov);
 		this.render();
 		return this;
@@ -314,9 +306,8 @@ export class SkyMap {
 	 *   - `longitude`: The new longitude in degrees.
 	 *   - `date`: The new date/time for astronomical calculations.
 	 *   - `fov`: The new field of view in degrees.
-	 * @returns The SkyMap instance for chaining.
 	 */
-	public setObserverParams(observerParams: ObserverParams): this {
+	public async setObserverParams(observerParams: ObserverParams): Promise<void> {
 		if (!validateObserverParams(observerParams)) {
 			throw new Error("Invalid observer parameters");
 		}
@@ -324,14 +315,12 @@ export class SkyMap {
 		this.observerParams = observerParams;
 		this.updateLatitude(observerParams.latitude);
 		this.updateLongitude(observerParams.longitude);
-		this.updateDate(observerParams.date);
 		this.updateFov(observerParams.fov);
+		await this.updateDate(observerParams.date);
 		this.render();
-		return this;
 	}
 
 	private animationFrameId: number | null = null;
-
 	private animate<T>(
 		startValue: T,
 		targetValue: T,
@@ -370,33 +359,30 @@ export class SkyMap {
 	 * @param latitude - The new latitude in degrees.
 	 * @param longitude - The new longitude in degrees.
 	 * @param duration - Duration of the animation in milliseconds.
-	 * @param stepCallback - Callback function to be called on each animation step.
 	 * @returns The SkyMap instance for chaining.
 	 */
-	public setLocationWithAnimation(
-		latitude: number,
-		longitude: number,
-		duration: number,
-		stepCallback?: (latitude: number, longitude: number) => void,
-	): this {
+	public setLocationWithAnimation(latitude: number, longitude: number, duration: number): this {
 		if (!validateLatitude(latitude) || !validateLongitude(longitude)) {
 			throw new Error("Invalid latitude or longitude value");
 		}
 
 		const startLat = this.latitude.deg;
-		const startLon = this.longitude.deg;
+		const startLst = this.lst.deg;
+
+		const finalLst = this.date.LST(longitude) % 360;
+		this.longitude = Angle.fromDegrees(longitude);
+		this.observerParams.longitude = longitude;
 
 		return this.animate<[number, number]>(
-			[startLat, startLon],
-			[latitude, longitude],
+			[startLat, startLst],
+			[latitude, finalLst],
 			duration,
-			([newLat, newLon]) => {
-				this.setLocation(newLat, newLon);
-				if (stepCallback !== undefined) {
-					stepCallback(newLat, newLon);
-				}
+			([newLat, newLst]) => {
+				this.lst = Angle.fromDegrees(newLst);
+				this.updateLatitude(newLat);
+				this.render();
 			},
-			(start, end, progress) => [lerp(start[0], end[0], progress), lerp(start[1], end[1], progress)],
+			(start, end, progress) => [lerpAngle(start[0], end[0], progress), lerpAngle(start[1], end[1], progress)],
 		);
 	}
 
@@ -405,24 +391,23 @@ export class SkyMap {
 	 *
 	 * @param date - The new date/time for astronomical calculations.
 	 * @param duration - Duration of the animation in milliseconds.
-	 * @param stepCallback - Callback function to be called on each animation step.
 	 * @returns The SkyMap instance for chaining.
 	 */
-	public setDateWithAnimation(date: Date, duration: number, stepCallback?: (date: Date) => void): this {
-		const startTime = this.date.UTCDate.getTime();
-		const targetTime = date.getTime();
+	public setDateWithAnimation(date: Date, duration: number): this {
+		const startLst = this.lst.deg;
+
+		this.date = AstronomicalTime.fromUTCDate(date);
+		const finalLst = this.date.LST(this.longitude.deg);
 
 		return this.animate<number>(
-			startTime,
-			targetTime,
+			startLst,
+			finalLst,
 			duration,
-			(newTime) => {
-				this.setDate(new Date(newTime));
-				if (stepCallback !== undefined) {
-					stepCallback(new Date(newTime));
-				}
+			(newLst) => {
+				this.lst = Angle.fromDegrees(newLst);
+				this.render();
 			},
-			lerp,
+			lerpAngle,
 		);
 	}
 
@@ -430,7 +415,6 @@ export class SkyMap {
 	 * Renders the whole map.
 	 */
 	public render(): void {
-		// const now = performance.now();
 		this.drawBg();
 
 		this.drawGrid();
@@ -442,7 +426,6 @@ export class SkyMap {
 		this.drawMoon();
 
 		this.drawBorder();
-		// console.log(performance.now() - now);
 	}
 
 	private drawDisk(coo: Coo, radius: number, color: string | CanvasGradient): void {
@@ -463,8 +446,7 @@ export class SkyMap {
 	}
 
 	private drawConstellationsLines(): void {
-		if (!this.cfg.constellations.lines.enabled) return;
-		if (!this.constellationsLines) throw new Error("constellations lines not loaded");
+		if (!this.cfg.constellations.lines.enabled || !this.constellationsLines) return;
 
 		const fontSize = this.scaleMod * this.cfg.constellations.lines.labels.fontSize;
 		this.ctx.font = `${fontSize}px ${this.cfg.fontFamily}`;
@@ -481,7 +463,7 @@ export class SkyMap {
 				for (let j = 0; j < group.length; j++) {
 					const [raDeg, decDeg] = group[j];
 
-					const { alt, az } = equatorialToHorizontal(degToRad(raDeg), degToRad(decDeg), this.latitude.ra, this.lst.ra);
+					const { alt, az } = this.equatorialToHorizontal(degToRad(raDeg), degToRad(decDeg));
 					const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 					if (alt < -20 || j === 0) {
@@ -492,8 +474,7 @@ export class SkyMap {
 				}
 			}
 
-			if (this.cfg.constellations.lines.labels.enabled) {
-				if (!this.constellationsLabels) throw new Error("contellations labels not loaded");
+			if (this.cfg.constellations.lines.labels.enabled && this.constellationsLabels !== undefined) {
 				const constellationsLabel = this.constellationsLabels.get(constellation.id);
 				if (!constellationsLabel) throw new Error("contellation label not found");
 
@@ -502,7 +483,7 @@ export class SkyMap {
 					const textWidth = this.ctx.measureText(text).width;
 					const [raDeg, decDeg] = constellationsLabel.coo;
 
-					const { alt, az } = equatorialToHorizontal(degToRad(raDeg), degToRad(decDeg), this.latitude.ra, this.lst.ra);
+					const { alt, az } = this.equatorialToHorizontal(degToRad(raDeg), degToRad(decDeg));
 					const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 					this.ctx.fillStyle = this.cfg.constellations.lines.labels.color;
@@ -516,8 +497,8 @@ export class SkyMap {
 	}
 
 	private drawConstellationsBoundaries(): void {
-		if (!this.cfg.constellations.boundaries.enabled) return;
-		if (!this.constellationsBoundaries) throw new Error("constellations boundaries not loaded");
+		if (!this.cfg.constellations.boundaries.enabled || !this.constellationsBoundaries) return;
+
 		this.ctx.strokeStyle = this.cfg.constellations.boundaries.color;
 		this.ctx.lineWidth = this.cfg.constellations.boundaries.width * this.scaleMod;
 		if (this.cfg.glow) {
@@ -531,7 +512,7 @@ export class SkyMap {
 				for (let j = 0; j < group.length; j++) {
 					const [raDeg, decDeg] = group[j];
 
-					const { alt, az } = equatorialToHorizontal(degToRad(raDeg), degToRad(decDeg), this.latitude.ra, this.lst.ra);
+					const { alt, az } = this.equatorialToHorizontal(degToRad(raDeg), degToRad(decDeg));
 					const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 					if (alt < -45) {
@@ -556,7 +537,7 @@ export class SkyMap {
 			const ra = hoursToRad(equatorial.ra);
 			const dec = degToRad(equatorial.dec);
 
-			const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude.ra, this.lst.ra);
+			const { alt, az } = this.equatorialToHorizontal(ra, dec);
 			const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 			const color = this.cfg.planets.color !== undefined ? this.cfg.planets.color : planet.color;
@@ -568,8 +549,7 @@ export class SkyMap {
 			const radius = (planet.radius * this.scaleMod * this.cfg.planets.scale) / this.fovFactor;
 			this.drawDisk(coo, radius, color);
 
-			if (this.cfg.planets.labels.enabled) {
-				if (!this.planetLabels) throw new Error("planet labels not loaded");
+			if (this.cfg.planets.labels.enabled && this.planetLabels !== undefined) {
 				const text = this.planetLabels[planet.id][this.cfg.language];
 				if (text) {
 					const textWidth = this.ctx.measureText(text).width;
@@ -583,6 +563,7 @@ export class SkyMap {
 
 	private drawMoon(): void {
 		if (!this.cfg.moon.enabled) return;
+
 		const fontSize = this.scaleMod * this.cfg.moon.label.fontSize;
 		this.ctx.font = `${fontSize}px ${this.cfg.fontFamily}`;
 
@@ -591,7 +572,7 @@ export class SkyMap {
 		const ra = hoursToRad(equatorial.ra);
 		const dec = degToRad(equatorial.dec);
 
-		const { alt, az } = equatorialToHorizontal(ra, dec, this.latitude.ra, this.lst.ra);
+		const { alt, az } = this.equatorialToHorizontal(ra, dec);
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 		const color = this.cfg.moon.color;
@@ -603,8 +584,7 @@ export class SkyMap {
 		const rad = (4 * this.scaleMod * this.cfg.moon.scale) / this.fovFactor;
 
 		this.drawDisk(coo, rad, color);
-		if (this.cfg.planets.labels.enabled) {
-			if (!this.moonLabels) throw new Error("moon labels not loaded");
+		if (this.cfg.planets.labels.enabled && this.moonLabels) {
 			const text = this.moonLabels[this.cfg.language];
 			if (text) {
 				const textWidth = this.ctx.measureText(text).width;
@@ -618,6 +598,7 @@ export class SkyMap {
 
 	private drawSun(): void {
 		if (!this.cfg.sun.enabled) return;
+
 		const fontSize = this.scaleMod * this.cfg.sun.label.fontSize;
 		this.ctx.font = `${fontSize}px ${this.cfg.fontFamily}`;
 
@@ -626,7 +607,7 @@ export class SkyMap {
 		const raRad = hoursToRad(equatorial.ra);
 		const decRad = degToRad(equatorial.dec);
 
-		const { alt, az } = equatorialToHorizontal(raRad, decRad, this.latitude.ra, this.lst.ra);
+		const { alt, az } = this.equatorialToHorizontal(raRad, decRad);
 		const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
 
 		const color = this.cfg.sun.color;
@@ -638,8 +619,7 @@ export class SkyMap {
 
 		this.drawDisk(coo, rad, color);
 
-		if (this.cfg.planets.labels.enabled) {
-			if (!this.sunLabels) throw new Error("sun labels not loaded");
+		if (this.cfg.planets.labels.enabled && this.sunLabels) {
 			const text = this.sunLabels[this.cfg.language];
 			if (text) {
 				const textWidth = this.ctx.measureText(text).width;
@@ -657,13 +637,10 @@ export class SkyMap {
 	}
 
 	private drawStars(): void {
-		if (!this.cfg.stars.enabled) return;
-		if (!this.stars) throw new Error("stars not loaded");
+		if (!this.cfg.stars.enabled || !this.stars) return;
 
 		for (const star of this.stars.stars) {
-			// if (star.mag > 5.2) return;
-
-			const { alt, az } = equatorialToHorizontal(degToRad(star.lon), degToRad(star.lat), this.latitude.ra, this.lst.ra);
+			const { alt, az } = this.equatorialToHorizontal(degToRad(star.lon), degToRad(star.lat));
 			if (alt < 0) continue;
 
 			const coo = projectSphericalTo2D(this.center, alt, az, this.radius / this.fovFactor);
@@ -684,6 +661,7 @@ export class SkyMap {
 
 	private drawGrid(): void {
 		if (!this.cfg.grid.enabled) return;
+
 		this.ctx.strokeStyle = this.cfg.grid.color;
 		this.ctx.lineWidth = this.cfg.grid.width * this.scaleMod;
 
@@ -692,12 +670,7 @@ export class SkyMap {
 			const decStart = raRad % 6 === 0 ? -18 : -16;
 
 			for (let decRad = decStart; decRad <= -decStart; decRad += 1) {
-				const { alt, az } = equatorialToHorizontal(
-					(raRad * Math.PI) / 12,
-					(decRad * Math.PI) / 36,
-					this.latitude.ra,
-					this.lst.ra,
-				);
+				const { alt, az } = this.equatorialToHorizontal((raRad * Math.PI) / 12, (decRad * Math.PI) / 36);
 
 				if (Math.abs(this.latitude.deg) < 1) {
 					if (alt < 0) {
@@ -720,12 +693,7 @@ export class SkyMap {
 			let firstPointVisible = false;
 
 			for (let raRad = 0; raRad <= 72; raRad += 1) {
-				const { alt, az } = equatorialToHorizontal(
-					(raRad * Math.PI) / 36,
-					(decRad * Math.PI) / 9,
-					this.latitude.ra,
-					this.lst.ra,
-				);
+				const { alt, az } = this.equatorialToHorizontal((raRad * Math.PI) / 36, (decRad * Math.PI) / 9);
 
 				if (alt < -3) {
 					firstPointVisible = false;
@@ -744,81 +712,102 @@ export class SkyMap {
 		this.ctx.stroke();
 	}
 
-	private applyContainerStyles(): void {
-		this.container.style.clipPath = "circle(50%)";
-		this.container.style.aspectRatio = "1/1";
-	}
-
 	private getObserver(): Observer {
 		return new Observer(this.latitude.deg, this.longitude.deg, 0);
 	}
 
 	private getLST(): number {
-		return this.date.LST(this.longitude.deg);
+		const res = this.date.LST(this.longitude.deg);
+		return res;
 	}
 
 	private updateLongitude(longitude: number): void {
-		if (!validateLongitude(longitude)) {
-			throw new Error("Invalid longitude value");
-		}
-
 		this.longitude = Angle.fromDegrees(longitude);
-		this.geoTz.find(this.latitude.deg, this.longitude.deg).then((tz) => {
-			const date1 = new Date(
-				this.date.UTCDate.toLocaleString("en-us", {
-					timeZone: tz[0],
-				}),
-			);
-			this.observerParams.date = date1;
-			this.date = AstronomicalTime.fromUTCDate(date1);
-
-			this.observerParams.longitude = longitude;
-			this.observer = this.getObserver();
-			this.lst = Angle.fromDegrees(this.getLST());
-		});
+		this.observerParams.longitude = longitude;
+		this.observer = this.getObserver();
 	}
 
 	private updateLatitude(latitude: number): void {
-		if (!validateLatitude(latitude)) {
-			throw new Error("Invalid latitude value");
-		}
+		this.latitude = this.calculateAngleWithSinAndCos(latitude);
+		this.observerParams.latitude = latitude;
 
-		this.latitude = Angle.fromDegrees(latitude);
-		this.geoTz.find(this.latitude.deg, this.longitude.deg).then((tz) => {
-			const date1 = new Date(
-				this.date.UTCDate.toLocaleString("en-us", {
-					timeZone: tz[0],
-				}),
-			);
-			this.observerParams.date = date1;
-			this.date = AstronomicalTime.fromUTCDate(date1);
-			this.lst = Angle.fromDegrees(this.getLST());
-
-			this.observerParams.latitude = latitude;
-
-			this.observer = this.getObserver();
-		});
+		this.observer = this.getObserver();
 	}
 
-	private updateDate(date: Date): void {
-		this.geoTz.find(this.latitude.deg, this.longitude.deg).then((tz) => {
-			const date1 = new Date(
-				date.toLocaleString("en-us", {
-					timeZone: tz[0],
-				}),
-			);
-			this.observerParams.date = date1;
-			this.date = AstronomicalTime.fromUTCDate(date1);
-			this.lst = Angle.fromDegrees(this.getLST());
+	private lastGeoTzFindCallId = 0;
+	private async updateDate(date?: Date): Promise<boolean> {
+		return new Promise((resolve, reject) => {
+			const callId = ++this.lastGeoTzFindCallId;
+
+			this.geoTz
+				.find(this.latitude.deg, this.longitude.deg)
+				.then(([tz]) => {
+					if (callId !== this.lastGeoTzFindCallId) {
+						resolve(false);
+					}
+
+					const timezonedDate = new Date(
+						(date !== undefined ? date : this.observerParams.date).toLocaleString("en-us", {
+							timeZone: tz,
+						}),
+					);
+
+					if (date !== undefined) {
+						this.observerParams.date = date;
+					}
+
+					this.date = AstronomicalTime.fromUTCDate(timezonedDate);
+					this.lst = Angle.fromDegrees(this.getLST());
+					resolve(true);
+				})
+				.catch((error) => {
+					reject(error);
+				});
 		});
 	}
 
 	private updateFov(fov: number): void {
-		if (!validateFov(fov)) {
-			throw new Error("Invalid fov value");
-		}
-
 		this.observerParams.fov = fov;
 		this.fovFactor = getFovFactor(fov);
+	}
+
+	private equatorialToHorizontal(
+		ra: number,
+		dec: number,
+	): {
+		alt: number;
+		az: number;
+	} {
+		const ha = ra - this.lst.ra;
+
+		const sinDec = Math.sin(dec);
+		const cosDec = Math.cos(dec);
+		const sinHa = Math.sin(ha);
+		const cosHa = Math.cos(ha);
+
+		const sinAlt = sinDec * this.latitude.sin + cosDec * this.latitude.cos * cosHa;
+		const alt = Math.asin(sinAlt);
+		const altDeg = radToDeg(alt);
+
+		if (this.latitude.deg === 90) {
+			return {
+				alt: altDeg,
+				az: ha + Math.PI,
+			};
+		}
+		if (this.latitude.deg === -90) {
+			return {
+				alt: altDeg,
+				az: -ha,
+			};
+		}
+
+		const cosAlt = Math.cos(alt);
+
+		const cosAz = (sinDec - this.latitude.sin * sinAlt) / (this.latitude.cos * cosAlt);
+		const sinAz = (-sinHa * cosDec) / cosAlt;
+		const az = Math.atan2(sinAz, cosAz);
+
+		return { alt: altDeg, az };
 	}
 }

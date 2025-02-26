@@ -10,9 +10,10 @@ export default class Angle {
 	}
 
 	public static fromDegrees(deg: number): Angle {
+		const normalizedDegrees = deg % 360;
 		return new Angle({
-			deg: deg,
-			ra: degToRad(deg),
+			deg: normalizedDegrees,
+			ra: degToRad(normalizedDegrees),
 		});
 	}
 

@@ -27,7 +27,7 @@ const minutes = String(now.getMinutes()).padStart(2, "0");
 dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
 
 const container = document.querySelector("#container") as HTMLDivElement;
-const skymap = await SkyMap.create(
+const skymap = new SkyMap(
 	container,
 	{
 		latitude: Number(latInput.value),
@@ -57,12 +57,7 @@ const skymap = await SkyMap.create(
 randomLocation.onclick = () => {
 	const lat = Math.random() * 180 - 90;
 	const lon = Math.random() * 360 - 180;
-	skymap.setLocationWithAnimation(lat, lon, 500, (lat, lon) => {
-		latInput.value = lat.toFixed(2);
-		latRange.value = lat.toFixed(2);
-		lonInput.value = lon.toFixed(2);
-		lonRange.value = lon.toFixed(2);
-	});
+	skymap.setLocationWithAnimation(lat, lon, 500);
 };
 
 randomTime.onclick = () => {
@@ -72,10 +67,8 @@ randomTime.onclick = () => {
 			new Date(year, 1, 1).getTime(),
 	);
 	dateInput.value = date.toISOString().slice(0, 16);
-	skymap.setDate(date);
-	// sm.animateDate(date, 10000, (date) => {
-	// 	dateInput.value = date.toISOString().slice(0, 16);
-	// });
+	// skymap.setDate(date);
+	skymap.setDateWithAnimation(date, 500);
 };
 
 gridCheckbox.addEventListener("change", () => {
