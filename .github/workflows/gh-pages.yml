@@ -1,0 +1,41 @@
+name: Deploy GitHub Pages
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setup Biome CLI
+        uses: biomejs/setup-biome@v2
+        with:
+          version: latest
+      - name: Run Biome CI
+        run: biome ci
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install deps
+        run: bun install
+      - name: Run tests
+        run: bun test
+      - name: Build
+        run: bun run build
+      - name: Generate docs
+        uses: erikyo/tsdoc-action@v1
+        with:
+          source_dir: ./src/*
+          output_dir: ./docs
+          front_page: README.md
+      - name: Deploy docs to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+      - uses: JS-DevTools/npm-publish@v3
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          package: dist

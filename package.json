@@ -1,6 +1,6 @@
 {
 	"name": "skymap",
-	"version": "1.0.4",
+	"version": "1.1.0",
 	"description": "Interactive Sky Map library for canvas",
 	"type": "module",
 	"repository": {
@@ -42,8 +42,8 @@
 		"@types/pbf": "^3.0.5",
 		"jest": "^29.7.0",
 		"ts-jest": "^29.2.6",
-		"tsup": "^8.3.6",
+		"tsup": "^8.4.0",
 		"typescript": "^5.7.3",
-		"vite": "^6.1.1"
+		"vite": "^6.2.0"
 	}
 }

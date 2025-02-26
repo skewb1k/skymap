@@ -38,35 +38,33 @@ bun add skymap
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Sky Map</title>
+  <meta charset="UTF-8">
+  <title>Sky Map</title>
 </head>
 
 <body>
-    <div id="sky-container" style="width: 500px; height: 500px;"></div>
-    <script type="module">
-        import SkyMap from "skymap";
-
-        const container = document.getElementById("sky-container");
-        const skymap = await SkyMap.create(
-            container,
-            {
-                date: new Date("2023-01-01T12:00:00Z"),
+  <div id="sky-container" style="width: 500px; height: 500px;"></div>
+  <script type="module">
+    import SkyMap from "skymap";
+    const container = document.getElementById("sky-container");
+    const skymap = SkyMap(
+      container,
+      {
+        date: new Date("2023-01-01T12:00:00Z"),
+      },
+      {
+        bgColor: "#0a0d13",
+        constellations: {
+          lines: {
+            labels: {
+              enabled: false,
             },
-            {
-                bgColor: "#0a0d13",
-                constellations: {
-                    lines: {
-                        labels: {
-                            enabled: false,
-                        },
-                    },
-                },
-            }
-        );
-    </script>
+          },
+        },
+      }
+    );
+  </script>
 </body>
-
 </html>
 ```
 
@@ -146,10 +144,10 @@ sky.destroy(); // Clean up the instance
 ```
 -->
 
-<!--
 ## 📖 **Documentation & Examples**
-📚 **Full API Documentation:** [nardora.github.io/skymap](https://nardora.github.io/skymap) (TODO)
+📚 **Full API Documentation:** [skewb1k.github.io/skymap](https://skewb1k.github.io/skymap) (TODO)
 
+<!--
 🛠 **Live Demos:** [CodeSandbox](https://codesandbox.io/) (TODO)
 
 ## 👥 **Contributing**
