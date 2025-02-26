@@ -110,6 +110,7 @@ export class SkyMap {
 		this.container = document.createElement("div");
 		this.container.style.clipPath = "circle(50%)";
 		this.container.style.aspectRatio = "1/1";
+		container.innerHTML = "";
 		container.append(this.container);
 
 		this.geoTz = init();
@@ -178,6 +179,14 @@ export class SkyMap {
 
 		this.resizeObserver = new ResizeObserver(this.resizeHandler);
 		this.resizeObserver.observe(this.container);
+	}
+
+	/**
+	 * Disconnects SkyMap from container.
+	 */
+	public disconnect() {
+		this.resizeObserver.disconnect();
+		this.lastGeoTzFindCallId = 0;
 	}
 
 	/**

@@ -145,7 +145,7 @@ sky.destroy(); // Clean up the instance
 -->
 
 ## 📖 **Documentation & Examples**
-📚 **Full API Documentation:** [skewb1k.github.io/skymap](https://skewb1k.github.io/skymap) (TODO)
+📚 **Full API Documentation:** [skewb1k.github.io/skymap](https://skewb1k.github.io/skymap)
 
 <!--
 🛠 **Live Demos:** [CodeSandbox](https://codesandbox.io/) (TODO)

@@ -19,7 +19,7 @@ jobs:
         with:
           bun-version: latest
       - name: Install deps
-        run: bun install
+        run: bun install --frozen-lockfile
       - name: Run tests
         run: bun test
       - name: Build
@@ -27,15 +27,13 @@ jobs:
       - name: Generate docs
         uses: erikyo/tsdoc-action@v1
         with:
-          source_dir: ./src/*
-          output_dir: ./docs
-          front_page: README.md
+          source_dir: src/index.ts
+          output_dir: docs
       - name: Deploy docs to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
-      - uses: JS-DevTools/npm-publish@v3
-        with:
-          token: ${{ secrets.NPM_TOKEN }}
-          package: dist
+      - run: bun publish
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
