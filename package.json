@@ -24,6 +24,7 @@
 		"fmt": "biome check --write .",
 		"lint": "biome check .",
 		"test": "bun test",
+		"knip": "knip",
 		"coverage": "bun test --coverage",
 		"publish": "bun run build && npm publish"
 	},
@@ -34,16 +35,12 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
-		"@jest/globals": "^29.7.0",
-		"@types/geobuf": "^3.0.4",
 		"@types/jest": "^29.5.14",
 		"@types/lodash.clonedeep": "^4.5.9",
-		"@types/node": "^22.13.5",
-		"@types/pbf": "^3.0.5",
-		"jest": "^29.7.0",
-		"ts-jest": "^29.2.6",
+		"@types/node": "^22.13.10",
+		"knip": "^5.45.0",
 		"tsup": "^8.4.0",
-		"typescript": "^5.7.3",
+		"typescript": "^5.8.2",
 		"vite": "^6.2.0"
 	}
 }
