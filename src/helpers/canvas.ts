@@ -11,9 +11,3 @@ export function lineTo(ctx: CanvasRenderingContext2D, p: Coo) {
 export function moveTo(ctx: CanvasRenderingContext2D, p: Coo) {
 	ctx.moveTo(p.x, p.y);
 }
-
-export function clipCircle(ctx: CanvasRenderingContext2D, center: Coo, radius: number): void {
-	ctx.beginPath();
-	arcCircle(ctx, center, radius);
-	ctx.clip();
-}

@@ -35,18 +35,18 @@ const skymap = new SkyMap(
 		date: new Date(dateInput.value),
 	},
 	{
+		glow: true,
 		bgColor: "#0a0d13",
-		// fontFamily: "Roboto",
+		fontFamily: "Roboto",
 		constellations: {
 			lines: {
 				// color: "#64C8FF66",
 				labels: {
 					enabled: true,
-					// fontSize: 20,
+					fontSize: 10,
 				},
 			},
 		},
-		// glow: true,
 		// language: "ru",
 		// stars: {
 		// 	color: "#fff",
