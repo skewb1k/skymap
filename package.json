@@ -1,6 +1,6 @@
 {
 	"name": "skymap",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"description": "Interactive Sky Map library for canvas",
 	"type": "module",
 	"repository": {
@@ -16,9 +16,7 @@
 		"types": "./dist/index.d.ts",
 		"require": "dist/index.cjs"
 	},
-	"files": [
-		"dist"
-	],
+	"files": ["dist"],
 	"scripts": {
 		"demo": "bun typecheck && vite",
 		"build": "bun typecheck && tsup",
@@ -37,6 +35,8 @@
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@types/jest": "^29.5.14",
+		"@types/geobuf": "latest",
+		"@types/pbf": "latest",
 		"@types/lodash.clonedeep": "^4.5.9",
 		"@types/node": "^22.15.3",
 		"tsup": "^8.4.0",

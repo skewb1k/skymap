@@ -7,6 +7,8 @@
 [![npm version](https://img.shields.io/npm/v/skymap)](https://www.npmjs.com/package/skymap)
 [![Stars](https://img.shields.io/github/stars/skewb1k/skymap?style=social)](https://github.com/skewb1k/skymap)
 
+![Skymap Example](.github/skymap.png)
+
 ## ✨ Features
 
 -  **Realistic Star Rendering** – Uses scientifically accurate colors and positions.
