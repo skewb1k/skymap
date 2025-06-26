@@ -5,9 +5,9 @@ import Angle from "../Angle/Angle";
 import { degToRad, hoursToRad, radToDeg } from "../Angle/angleconv";
 import AstronomicalTime from "../AstronomicalTime/AstronomicalTime";
 import { type Config, defaultConfig, mergeConfigs } from "../config";
-import type DeepPartial from "../helpers/DeepPartial";
 import { arcCircle, lineTo, moveTo } from "../helpers/canvas";
 import { bvToRGB } from "../helpers/color";
+import type DeepPartial from "../helpers/DeepPartial";
 import deepProxy from "../helpers/deepProxy";
 import easeProgress from "../helpers/easeProgress";
 import fetchJson from "../helpers/fetchJson";
@@ -15,8 +15,8 @@ import getFovFactor from "../helpers/getFovFactor";
 import lerpAngle from "../helpers/lerp";
 import projectSphericalTo2D from "../helpers/projectSphericalTo2D";
 import {
-	type ObserverParams,
 	defaultObserverParams,
+	type ObserverParams,
 	validateFov,
 	validateLatitude,
 	validateLongitude,

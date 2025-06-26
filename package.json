@@ -16,7 +16,9 @@
 		"types": "./dist/index.d.ts",
 		"require": "dist/index.cjs"
 	},
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"scripts": {
 		"demo": "bun typecheck && vite",
 		"build": "bun typecheck && tsup",
@@ -33,14 +35,13 @@
 		"lodash.clonedeep": "^4.5.0"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^1.9.4",
-		"@types/jest": "^29.5.14",
-		"@types/geobuf": "latest",
-		"@types/pbf": "latest",
+		"@types/jest": "^30.0.0",
+		"@types/geobuf": "^3.0.4",
+		"@types/pbf": "^3.0.5",
 		"@types/lodash.clonedeep": "^4.5.9",
-		"@types/node": "^22.15.3",
-		"tsup": "^8.4.0",
+		"@types/node": "^24.0.4",
+		"tsup": "^8.5.0",
 		"typescript": "^5.8.3",
-		"vite": "^6.3.4"
+		"vite": "^7.0.0"
 	}
 }

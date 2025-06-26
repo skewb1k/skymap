@@ -40,13 +40,13 @@ export default class AstronomicalTime {
 			// Calculate the Julian Day Number (JDN)
 			const A = Math.floor(adjustedYear / 100);
 			const B = 2 - A + Math.floor(A / 4);
-			const JD0 =
+			const Jd0 =
 				Math.floor(365.25 * (adjustedYear + 4716)) + Math.floor(30.6001 * (adjustedMonth + 1)) + day + B - 1524.5;
 
 			// Calculate the fractional day from the time
 			const fractionalDay = (hour + minute / 60 + second / 3600) / 24;
 
-			this.julianDateCache = JD0 + fractionalDay;
+			this.julianDateCache = Jd0 + fractionalDay;
 		}
 		return this.julianDateCache;
 	}
